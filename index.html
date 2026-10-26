@@ -57,7 +57,6 @@
         .toast.error { background: #dc3545; }
         .no-data { text-align: center; color: #999; padding: 40px; }
         .badge { display: inline-block; padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; background: #e9ecef; margin-left: 5px; }
-        
         @media (max-width: 600px) {
             .grid-2 { grid-template-columns: 1fr; }
             .modal-content { padding: 15px; }
@@ -187,7 +186,7 @@
 const SUPABASE_URL = 'https://itoyvqqssqmeyxawvulq.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_nbUWlCIXbB48NoBRhH4ucg_PfCAmau1';
 let supabaseClient = null;
-try { supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) {}
+try { supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) { console.warn('Supabase init failed:', e); }
 
 let data = { objekti: [] };
 let aktivniObjektId = null;
@@ -221,36 +220,57 @@ const TIPOVI_DOK = {
     ]
 };
 
-// ==================== STORAGE ====================
+// ==================== STORAGE (sigurno) ====================
 async function loadFromCloud() {
-    if (!supabaseClient) { loadLocal(); return; }
+    loadLocal();
+    if (!supabaseClient) return;
     try {
-        const { data: result } = await supabaseClient.from('dokumenti_data').select('*').eq('id', 1).single();
-        if (result) data = result.podaci || { objekti: [] };
-        else await supabaseClient.from('dokumenti_data').upsert({ id: 1, podaci: data });
-    } catch(e) { loadLocal(); }
+        const { data: result, error } = await supabaseClient
+            .from('dokumenti_data')
+            .select('*')
+            .eq('id', 1)
+            .maybeSingle();
+        if (error) { console.warn('Cloud read:', error.message); return; }
+        if (result && result.podaci) { data = result.podaci; saveLocal(); }
+    } catch (e) { console.warn('Cloud load failed:', e); }
 }
 
 async function saveToCloud() {
     saveLocal();
     if (!supabaseClient) return;
-    try { await supabaseClient.from('dokumenti_data').upsert({ id: 1, podaci: data }); } catch(e) { console.error(e); }
+    try {
+        const { error } = await supabaseClient.from('dokumenti_data').upsert({ id: 1, podaci: data });
+        if (error) console.warn('Cloud write:', error.message);
+    } catch (e) { console.warn('Cloud save failed:', e); }
 }
 
-function loadLocal() { const s = localStorage.getItem('dokumenti_data'); if (s) data = JSON.parse(s); }
-function saveLocal() { localStorage.setItem('dokumenti_data', JSON.stringify(data)); }
+function loadLocal() {
+    try {
+        const s = localStorage.getItem('dokumenti_data');
+        if (s) {
+            const parsed = JSON.parse(s);
+            if (parsed && Array.isArray(parsed.objekti)) data = parsed;
+        }
+    } catch (e) { console.warn('Local load:', e); }
+}
+function saveLocal() {
+    try { localStorage.setItem('dokumenti_data', JSON.stringify(data)); }
+    catch (e) { console.warn('Local save:', e); }
+}
 
 // ==================== INIT ====================
 function login() {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('appContent').style.display = 'block';
+    renderMain();
     loadFromCloud().then(() => renderMain());
 }
 
 function logout() {
     document.getElementById('appContent').style.display = 'none';
     document.getElementById('loginScreen').style.display = 'flex';
-    aktivniObjektId = null; aktivniFolder = null;
+    aktivniObjektId = null;
+    aktivniFolder = null;
 }
 
 // ==================== RENDER ====================
@@ -290,7 +310,6 @@ function renderFolderi() {
     const c = document.getElementById('mainContent');
     const o = data.objekti.find(x => x.id === aktivniObjektId);
     if (!o) { aktivniObjektId = null; renderMain(); return; }
-    
     let html = `<div class="breadcrumb"><a onclick="idiNaObjekte()">🏢 Objekti</a> › <b>${o.naziv}</b></div>`;
     html += '<div class="grid">';
     FOLDERI.forEach(f => {
@@ -308,7 +327,6 @@ function renderRadnici() {
     const c = document.getElementById('mainContent');
     const o = data.objekti.find(x => x.id === aktivniObjektId);
     const f = FOLDERI.find(x => x.id === aktivniFolder);
-    
     let html = `<div class="breadcrumb">
         <a onclick="idiNaObjekte()">🏢 Objekti</a> › 
         <a onclick="idiNaFoldere()">${o.naziv}</a> › 
@@ -318,7 +336,6 @@ function renderRadnici() {
     html += '<button onclick="showUvoz()" class="btn btn-primary">📥 Uvezi radnike iz Excela</button>';
     html += '<button onclick="dodajRadnikaRucno()" class="btn btn-success">+ Dodaj ručno</button>';
     html += '</div>';
-    
     if (!o.radnici || o.radnici.length === 0) {
         html += '<div class="no-data">Nema radnika. Uvezite iz Excela ili dodajte ručno.</div>';
     } else {
@@ -382,7 +399,6 @@ async function sacuvajObjekt() {
     const naziv = document.getElementById('objNaziv').value.trim();
     if (!naziv) { toast('Unesite naziv firme', true); return; }
     const logo = document.getElementById('objLogoPreview').querySelector('img')?.src || null;
-    
     if (editingObjektId) {
         const o = data.objekti.find(x => x.id === editingObjektId);
         Object.assign(o, {
@@ -450,21 +466,17 @@ function showUvoz() {
 function parsirajUvoz() {
     const tekst = document.getElementById('uvozTekst').value.trim();
     if (!tekst) { toast('Zalijepi tekst!', true); return; }
-    
     const linije = tekst.split(/\r?\n/);
     const radnici = [];
     let trenutni = null;
-    
     linije.forEach(linija => {
         if (!linija.trim()) return;
         let dijelovi;
         if (linija.includes('\t')) dijelovi = linija.split('\t').map(x => x.trim());
         else dijelovi = [linija.trim()];
-        
         const kljuc = (dijelovi[0] || '').toLowerCase().trim();
         const vrijednost = (dijelovi[1] || '').trim();
         if (!kljuc) return;
-        
         if (kljuc === 'name' || kljuc === 'ime') {
             if (trenutni && (trenutni.ime || trenutni.pasos)) radnici.push(trenutni);
             trenutni = { ime: vrijednost };
@@ -472,7 +484,6 @@ function parsirajUvoz() {
             return;
         }
         if (!trenutni) trenutni = {};
-        
         if (kljuc === 'surname' || kljuc === 'prezime') trenutni.prezime = vrijednost;
         else if (kljuc.includes('place of birth') || kljuc === 'mjesto_rođenja') trenutni.mjesto_rodenja = vrijednost;
         else if (kljuc === 'addrress' || kljuc === 'address' || kljuc === 'adresa') trenutni.adresa = vrijednost;
@@ -482,17 +493,12 @@ function parsirajUvoz() {
         else if (kljuc.includes('workplace') || kljuc.includes('nominated')) trenutni.radno_mjesto = vrijednost;
     });
     if (trenutni && (trenutni.ime || trenutni.pasos)) radnici.push(trenutni);
-    
-    radnici.forEach(r => {
-        if (!r.drzavljanstvo) r.drzavljanstvo = 'Egypt';
-    });
-    
+    radnici.forEach(r => { if (!r.drzavljanstvo) r.drzavljanstvo = 'Egypt'; });
     trenutniUvoz = radnici;
     if (radnici.length === 0) {
         document.getElementById('uvozPreview').innerHTML = '<div class="info-box info-danger">❌ Nisam prepoznao nijednog radnika.</div>';
         return;
     }
-    
     let html = `<div class="info-box info-success">✅ Prepoznato <strong>${radnici.length}</strong> radnika:</div>`;
     html += '<table><thead><tr><th>Ime</th><th>Pasoš</th><th>Zanimanje</th><th>Mjesto rođenja</th></tr></thead><tbody>';
     radnici.forEach(r => {
@@ -565,7 +571,6 @@ async function sacuvajRadnika() {
     const o = data.objekti.find(x => x.id === aktivniObjektId);
     if (!o) return;
     if (!o.radnici) o.radnici = [];
-    
     const novi = {
         ime: document.getElementById('radIme').value.trim(),
         prezime: document.getElementById('radPrezime').value.trim(),
@@ -587,7 +592,6 @@ async function sacuvajRadnika() {
         pol: document.getElementById('radPol').value,
         bracno: document.getElementById('radBracno').value
     };
-    
     if (editingRadnikIndex !== null) {
         const stari = o.radnici[editingRadnikIndex];
         novi.dokumenti = stari.dokumenti || {};
@@ -595,7 +599,6 @@ async function sacuvajRadnika() {
     } else {
         o.radnici.push(novi);
     }
-    
     await saveToCloud();
     closeModal('radnikModal');
     renderMain();
@@ -616,20 +619,17 @@ function generisiDokumente(idx) {
     const o = data.objekti.find(x => x.id === aktivniObjektId);
     const r = o.radnici[idx];
     const tipovi = TIPOVI_DOK[aktivniFolder] || [];
-    
     let html = `<div class="info-box info-info">
         <strong>Radnik:</strong> ${r.ime} ${r.prezime}<br>
         <strong>Pasoš:</strong> ${r.pasos || '-'}<br>
         <strong>Državljanstvo:</strong> ${r.drzavljanstvo || '-'}
     </div>`;
-    
     html += '<div class="grid-2">';
     html += '<div class="form-group"><label>Datum izdavanja dokumenta:</label>';
     html += `<input type="date" id="genDatum" value="${new Date().toISOString().slice(0,10)}"></div>`;
     html += '<div class="form-group"><label>Mjesto izdavanja:</label>';
     html += `<input type="text" id="genMjesto" value="${o.mjesto || 'Budva'}"></div>`;
     html += '</div>';
-    
     html += '<h3 style="margin-top: 20px; font-size: 16px;">Odaberi dokumente:</h3>';
     html += '<div style="background: #f8f9fa; padding: 15px; border-radius: 6px;">';
     tipovi.forEach(t => {
@@ -640,9 +640,7 @@ function generisiDokumente(idx) {
         </label>`;
     });
     html += '</div>';
-    
     html += `<button onclick="generisiOdabrane(${idx})" class="btn btn-success" style="width: 100%; padding: 14px; margin-top: 15px; font-size: 15px;">📄 Generiši dokumente</button>`;
-    
     document.getElementById('generisiContent').innerHTML = html;
     showModal('generisiModal');
 }
@@ -652,33 +650,29 @@ async function generisiOdabrane(idx) {
     const r = o.radnici[idx];
     const datum = document.getElementById('genDatum').value;
     const mjesto = document.getElementById('genMjesto').value;
-    
     const odabrani = Array.from(document.querySelectorAll('.genDok:checked')).map(c => c.value);
     if (odabrani.length === 0) { toast('Odaberi barem jedan dokument', true); return; }
-    
     if (!r.dokumenti) r.dokumenti = {};
     if (!r.dokumenti[aktivniFolder]) r.dokumenti[aktivniFolder] = {};
-    
     odabrani.forEach(tip => {
         r.dokumenti[aktivniFolder][tip] = { datum, mjesto, kreirano: new Date().toISOString() };
     });
-    
     await saveToCloud();
-    
     odabrani.forEach(tip => {
         const html = generisiHTMLDokumenta(o, r, tip, datum, mjesto);
         const win = window.open('', '_blank');
         win.document.write(html);
         win.document.close();
     });
-    
     closeModal('generisiModal');
     renderMain();
     toast(`📄 Generisano ${odabrani.length} dokumenata`);
 }
 
-// ==================== HTML GENERATOR ====================
+// ==================== HTML GENERATOR (ostali dokumenti) ====================
 function generisiHTMLDokumenta(o, r, tip, datum, mjesto) {
+    if (tip === 'viza_obrazac') return generisiVizaObrazac(o, r, datum, mjesto);
+
     const imePrezime = `${r.ime || ''} ${r.prezime || ''}`.trim();
     const ime = r.ime || '';
     const prezime = r.prezime || '';
@@ -695,14 +689,7 @@ function generisiHTMLDokumenta(o, r, tip, datum, mjesto) {
     const plata = r.plata || '800';
     const ugovorOd = r.ugovor_od || '';
     const ugovorDo = r.ugovor_do || '';
-    const roditelji = r.roditelji || '';
-    const pol = r.pol || 'M';
-    const bracno = r.bracno || 'Single';
-    
-    if (tip === 'viza_obrazac') {
-        return generisiVizaObrazac(o, r, datum, mjesto);
-    }
-    
+
     const memorandum = `
         <div style="border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center;">
             <div>
@@ -715,9 +702,9 @@ function generisiHTMLDokumenta(o, r, tip, datum, mjesto) {
             ${o.logo ? `<img src="${o.logo}" style="max-height: 60px;">` : ''}
         </div>
     `;
-    
+
     let sadrzaj = '';
-    
+
     if (tip === 'confirmation') {
         sadrzaj = `
             <h2 style="text-align: center; margin: 30px 0;">CONFIRMATION LETTER</h2>
@@ -812,7 +799,7 @@ function generisiHTMLDokumenta(o, r, tip, datum, mjesto) {
             <p style="margin-top: 50px;"><strong>${o.direktor || ''}</strong><br>Izvršni direktor<br>${o.telefon ? 'Tel: ' + o.telefon : ''}</p>
         `;
     }
-    
+
     return `<!DOCTYPE html>
     <html><head><meta charset="UTF-8"><title>${tip}</title>
     <style>
@@ -825,7 +812,7 @@ function generisiHTMLDokumenta(o, r, tip, datum, mjesto) {
     <body>${memorandum}${sadrzaj}</body></html>`;
 }
 
-// ==================== VIZNI OBRAZAC (EDITABLE) ====================
+// ==================== VIZNI OBRAZAC (EDITABLE, 3 STRANICE) ====================
 function generisiVizaObrazac(o, r, datum, mjesto) {
     const ime = r.ime || '';
     const prezime = r.prezime || '';
@@ -859,105 +846,42 @@ function generisiVizaObrazac(o, r, datum, mjesto) {
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
     body { font-family: Arial, sans-serif; font-size: 8pt; color: #000; background: #888; }
-
-    .toolbar {
-        position: fixed; top: 0; left: 0; right: 0;
-        background: #222; color: #fff; padding: 8px 15px;
-        display: flex; gap: 8px; align-items: center;
-        z-index: 9999; font-size: 13px; font-family: 'Segoe UI', sans-serif;
-    }
-    .toolbar button {
-        padding: 7px 14px; border: none; border-radius: 4px;
-        cursor: pointer; font-weight: bold; font-size: 13px;
-    }
+    .toolbar { position: fixed; top: 0; left: 0; right: 0; background: #222; color: #fff; padding: 8px 15px; display: flex; gap: 8px; align-items: center; z-index: 9999; font-size: 13px; font-family: 'Segoe UI', sans-serif; }
+    .toolbar button { padding: 7px 14px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; }
     .toolbar .btn-save { background: #28a745; color: #fff; }
     .toolbar .btn-print { background: #17a2b8; color: #fff; }
     .toolbar .btn-close { background: #dc3545; color: #fff; }
     .toolbar .status { margin-left: auto; color: #aaa; font-size: 12px; }
-
     .pages { padding-top: 55px; }
-
-    .page {
-        width: 194mm; height: 281mm;
-        background: #fff; margin: 10px auto;
-        padding: 0; position: relative;
-        page-break-after: always;
-        overflow: hidden;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    }
+    .page { width: 194mm; height: 281mm; background: #fff; margin: 10px auto; padding: 0; position: relative; page-break-after: always; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
     .page:last-child { page-break-after: auto; }
-
     table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     td, th { border: 0.6pt solid #000; padding: 2px 3px; vertical-align: top; }
-
     .lbl { font-size: 6.3pt; font-weight: bold; line-height: 1.15; }
     .lbl-sub { font-size: 5.8pt; font-style: italic; line-height: 1.15; color: #222; }
     .num { font-size: 7pt; font-weight: bold; text-align: center; width: 6mm; }
-
-    .val {
-        display: inline-block; min-width: 30px; min-height: 11px;
-        font-size: 8.5pt; font-weight: bold;
-        border-bottom: 0.5pt dotted #ccc;
-        padding: 0 2px; outline: none;
-    }
+    .val { display: inline-block; min-width: 30px; min-height: 11px; font-size: 8.5pt; font-weight: bold; border-bottom: 0.5pt dotted #ccc; padding: 0 2px; outline: none; }
     .val:focus { background: #fffbe6; border-bottom: 0.5pt solid #f0c000; }
-
-    .val-empty {
-        display: block; min-height: 14px; width: 100%;
-        font-size: 8.5pt; font-weight: bold;
-        border: none; outline: none; padding: 1px 2px;
-    }
+    .val-empty { display: block; min-height: 14px; width: 100%; font-size: 8.5pt; font-weight: bold; border: none; outline: none; padding: 1px 2px; }
     .val-empty:focus { background: #fffbe6; }
-
-    .cb-wrap {
-        display: inline-flex; align-items: center; gap: 3px;
-        font-size: 6.5pt; margin-right: 8px; vertical-align: middle;
-        cursor: pointer; user-select: none;
-    }
-    .checkbox {
-        display: inline-block; width: 7px; height: 7px;
-        border: 0.8pt solid #000; background: #fff;
-        position: relative; flex-shrink: 0; cursor: pointer;
-    }
+    .cb-wrap { display: inline-flex; align-items: center; gap: 3px; font-size: 6.5pt; margin-right: 8px; vertical-align: middle; cursor: pointer; user-select: none; }
+    .checkbox { display: inline-block; width: 7px; height: 7px; border: 0.8pt solid #000; background: #fff; position: relative; flex-shrink: 0; cursor: pointer; }
     .checkbox.checked { background: #000; }
-    .checkbox.checked::after {
-        content: "✓"; color: #fff; font-size: 7pt; font-weight: bold;
-        position: absolute; top: -2px; left: 0.3px; line-height: 1;
-    }
-
+    .checkbox.checked::after { content: "✓"; color: #fff; font-size: 7pt; font-weight: bold; position: absolute; top: -2px; left: 0.3px; line-height: 1; }
     .header-title { text-align: center; font-weight: bold; }
     .title-main { font-size: 11pt; letter-spacing: 0.5px; }
     .title-sub { font-size: 8pt; font-style: italic; }
     .title-fr { font-size: 7pt; font-style: italic; }
-
     .photo-cell { width: 40mm; text-align: center; padding: 4px; }
-    .photo-box {
-        width: 35mm; height: 45mm; border: 0.8pt solid #000;
-        margin: 0 auto; display: flex; align-items: center; justify-content: center;
-        font-size: 7pt; color: #555; text-align: center;
-        background: #fafafa;
-    }
-
-    .section-title {
-        font-size: 6.5pt; font-weight: bold; text-align: center;
-        background: #f0f0f0; padding: 2px;
-    }
-
+    .photo-box { width: 35mm; height: 45mm; border: 0.8pt solid #000; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 7pt; color: #555; text-align: center; background: #fafafa; }
+    .section-title { font-size: 6.5pt; font-weight: bold; text-align: center; background: #f0f0f0; padding: 2px; }
     .official-row { background: #f5f5f5; }
-
     .sig-line { border-bottom: 0.6pt solid #000; height: 22px; }
-
     .right-side { width: 42mm; vertical-align: top; padding: 3px; }
     .right-side .section-title { font-size: 6pt; }
-
     .napomene-line { border-bottom: 0.5pt dotted #666; height: 10px; margin: 1px 0; }
-
-    .statement-box {
-        font-size: 5.6pt; line-height: 1.25; padding: 4px;
-        text-align: justify;
-    }
+    .statement-box { font-size: 5.6pt; line-height: 1.25; padding: 4px; text-align: justify; }
     .statement-box p { margin: 0 0 3px 0; }
-
     @media print {
         body { background: #fff; }
         .toolbar { display: none !important; }
@@ -1234,11 +1158,9 @@ function generisiVizaObrazac(o, r, datum, mjesto) {
             <div class="napomene-line" contenteditable="true"></div>
             <div style="font-size:6pt;" contenteditable="true">do / to / au</div>
             <div class="napomene-line" contenteditable="true"></div>
-
             <div class="section-title" style="margin-top:6px;" contenteditable="true">Trajanje boravka<br>Duration of stay<br>Durée du séjour</div>
             <div style="margin-top:3px;font-size:6pt;" contenteditable="true">Dana / Days / Jours</div>
             <div class="napomene-line" contenteditable="true"></div>
-
             <div class="section-title" style="margin-top:6px;" contenteditable="true">Napomene<br>Remarks<br>Remarques</div>
             <div class="napomene-line" contenteditable="true"></div>
             <div class="napomene-line" contenteditable="true"></div>
@@ -1392,7 +1314,7 @@ function generisiVizaObrazac(o, r, datum, mjesto) {
                 ${cb(false, '<span contenteditable="true">Drugo / Other / Autres</span>')}
             </div>
             <div style="margin-top:2px;">
-                ${cb(true, '<span contenteditable="true">Putno ili zdravstveno osiguranje. Važi do / Travel and/or health insurance. Valid until / Assurance voyage et/ou assurance maladie. Valable jusqu\'au:</span>')}
+                ${cb(true, "<span contenteditable=\"true\">Putno ili zdravstveno osiguranje. Važi do / Travel and/or health insurance. Valid until / Assurance voyage et/ou assurance maladie. Valable jusqu'au:</span>")}
             </div>
             <div class="val-empty" contenteditable="true"></div>
         </td>
@@ -1517,14 +1439,12 @@ function generisiVizaObrazac(o, r, datum, mjesto) {
 
 <script>
     function sacuvajVizu(radnikId) {
-        // Pošalji roditelju (glavnom prozoru) poruku sa svim contenteditable podacima
         try {
             const root = document.getElementById('vizaRoot');
             const podaci = {};
             root.querySelectorAll('[contenteditable="true"]').forEach((el, i) => {
                 podaci['f_' + i] = el.innerHTML;
             });
-            // Checkbox stanja
             root.querySelectorAll('.checkbox').forEach((el, i) => {
                 podaci['cb_' + i] = el.classList.contains('checked');
             });
@@ -1533,7 +1453,6 @@ function generisiVizaObrazac(o, r, datum, mjesto) {
                 document.getElementById('statusMsg').textContent = '✅ Sačuvano!';
                 document.getElementById('statusMsg').style.color = '#28a745';
             } else {
-                // Fallback: lokalno
                 localStorage.setItem('viza_izmjene_' + radnikId, JSON.stringify(podaci));
                 document.getElementById('statusMsg').textContent = '✅ Sačuvano lokalno!';
                 document.getElementById('statusMsg').style.color = '#28a745';
@@ -1547,14 +1466,13 @@ function generisiVizaObrazac(o, r, datum, mjesto) {
 </body></html>`;
 }
 
-// Prima poruku iz viznog prozora i čuva izmjene u bazu
+// Prima poruku iz viznog prozora
 function primiVizuIzmjene(radnikId, podaci) {
     let sacuvano = false;
     for (const o of data.objekti) {
         if (!o.radnici) continue;
         for (const r of o.radnici) {
-            const id = r.pasos || null;
-            if (id === radnikId) {
+            if ((r.pasos || '') === radnikId) {
                 if (!r.dokumenti) r.dokumenti = {};
                 if (!r.dokumenti.viza) r.dokumenti.viza = {};
                 if (!r.dokumenti.viza.viza_obrazac) r.dokumenti.viza.viza_obrazac = {};
@@ -1565,10 +1483,7 @@ function primiVizuIzmjene(radnikId, podaci) {
         }
         if (sacuvano) break;
     }
-    if (sacuvano) {
-        saveToCloud();
-        toast('💾 Izmjene vize sačuvane');
-    }
+    if (sacuvano) { saveToCloud(); toast('💾 Izmjene vize sačuvane'); }
 }
 
 // ==================== UTILS ====================
