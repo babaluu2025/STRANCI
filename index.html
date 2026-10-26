@@ -182,26 +182,94 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ==================== KONFIGURACIJA ====================
-const SUPABASE_URL = 'https://itoyvqqssqmeyxawvulq.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_nbUWlCIXbB48NoBRhH4ucg_PfCAmau1';
-let supabaseClient = null;
-try { supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) { console.warn('Supabase init failed:', e); }
+// ==================== GLOBALNE VARIJABLE ====================
+var data = { objekti: [] };
+var aktivniObjektId = null;
+var aktivniFolder = null;
+var editingObjektId = null;
+var editingRadnikIndex = null;
+var trenutniUvoz = [];
+var supabaseClient = null;
 
-let data = { objekti: [] };
-let aktivniObjektId = null;
-let aktivniFolder = null;
-let editingObjektId = null;
-let editingRadnikIndex = null;
-let trenutniUvoz = [];
+// ==================== SUPABASE (opciono, ne blokira app) ====================
+try {
+    if (typeof supabase !== 'undefined' && supabase.createClient) {
+        supabaseClient = supabase.createClient(
+            'https://itoyvqqssqmeyxawvulq.supabase.co',
+            'sb_publishable_nbUWlCIXbB48NoBRhH4ucg_PfCAmau1'
+        );
+    }
+} catch(e) { console.warn('Supabase init:', e); }
 
-const FOLDERI = [
+// ==================== LOGIN / LOGOUT (globalno, sigurno) ====================
+window.login = function() {
+    try {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('appContent').style.display = 'block';
+        if (typeof loadLocal === 'function') loadLocal();
+        if (typeof renderMain === 'function') renderMain();
+        if (typeof loadFromCloud === 'function') {
+            loadFromCloud().then(function(){
+                if (typeof renderMain === 'function') renderMain();
+            }).catch(function(e){ console.warn('Cloud:', e); });
+        }
+    } catch(e) {
+        console.error('Login greška:', e);
+        alert('Greška pri ulasku: ' + e.message);
+    }
+};
+
+window.logout = function() {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('appContent').style.display = 'none';
+    aktivniObjektId = null;
+    aktivniFolder = null;
+};
+
+// ==================== STORAGE ====================
+function loadLocal() {
+    try {
+        var s = localStorage.getItem('dokumenti_data');
+        if (s) {
+            var p = JSON.parse(s);
+            if (p && Array.isArray(p.objekti)) data = p;
+        }
+    } catch(e) { console.warn('loadLocal:', e); }
+}
+
+function saveLocal() {
+    try { localStorage.setItem('dokumenti_data', JSON.stringify(data)); }
+    catch(e) { console.warn('saveLocal:', e); }
+}
+
+async function loadFromCloud() {
+    loadLocal();
+    if (!supabaseClient) return;
+    try {
+        var res = await supabaseClient.from('dokumenti_data').select('*').eq('id', 1).maybeSingle();
+        if (res && res.data && res.data.podaci) {
+            data = res.data.podaci;
+            saveLocal();
+        }
+    } catch(e) { console.warn('loadFromCloud:', e); }
+}
+
+async function saveToCloud() {
+    saveLocal();
+    if (!supabaseClient) return;
+    try {
+        await supabaseClient.from('dokumenti_data').upsert({ id: 1, podaci: data });
+    } catch(e) { console.warn('saveToCloud:', e); }
+}
+
+// ==================== FOLDERI ====================
+var FOLDERI = [
     { id: 'ambasada', naziv: '🏛️ Ambasada', boja: '#17a2b8' },
     { id: 'inspektor', naziv: '👮 Inspektor za strance', boja: '#ffc107' },
     { id: 'viza', naziv: '🛂 Viza', boja: '#6f42c1' }
 ];
 
-const TIPOVI_DOK = {
+var TIPOVI_DOK = {
     ambasada: [
         { id: 'confirmation', naziv: 'Confirmation Letter' },
         { id: 'invitation', naziv: 'Invitation Letter' },
@@ -215,63 +283,8 @@ const TIPOVI_DOK = {
         { id: 'izjava_firma', naziv: 'Izjava firme' },
         { id: 'pozivno', naziv: 'Pozivno pismo' }
     ],
-    viza: [
-        { id: 'viza_obrazac', naziv: 'Zahtjev za vizu (43 polja)' }
-    ]
+    viza: [{ id: 'viza_obrazac', naziv: 'Zahtjev za vizu (43 polja)' }]
 };
-
-// ==================== STORAGE (sigurno) ====================
-async function loadFromCloud() {
-    loadLocal();
-    if (!supabaseClient) return;
-    try {
-        const { data: result, error } = await supabaseClient
-            .from('dokumenti_data')
-            .select('*')
-            .eq('id', 1)
-            .maybeSingle();
-        if (error) { console.warn('Cloud read:', error.message); return; }
-        if (result && result.podaci) { data = result.podaci; saveLocal(); }
-    } catch (e) { console.warn('Cloud load failed:', e); }
-}
-
-async function saveToCloud() {
-    saveLocal();
-    if (!supabaseClient) return;
-    try {
-        const { error } = await supabaseClient.from('dokumenti_data').upsert({ id: 1, podaci: data });
-        if (error) console.warn('Cloud write:', error.message);
-    } catch (e) { console.warn('Cloud save failed:', e); }
-}
-
-function loadLocal() {
-    try {
-        const s = localStorage.getItem('dokumenti_data');
-        if (s) {
-            const parsed = JSON.parse(s);
-            if (parsed && Array.isArray(parsed.objekti)) data = parsed;
-        }
-    } catch (e) { console.warn('Local load:', e); }
-}
-function saveLocal() {
-    try { localStorage.setItem('dokumenti_data', JSON.stringify(data)); }
-    catch (e) { console.warn('Local save:', e); }
-}
-
-// ==================== INIT ====================
-function login() {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('appContent').style.display = 'block';
-    renderMain();
-    loadFromCloud().then(() => renderMain());
-}
-
-function logout() {
-    document.getElementById('appContent').style.display = 'none';
-    document.getElementById('loginScreen').style.display = 'flex';
-    aktivniObjektId = null;
-    aktivniFolder = null;
-}
 
 // ==================== RENDER ====================
 function renderMain() {
@@ -281,93 +294,84 @@ function renderMain() {
 }
 
 function renderObjekti() {
-    const c = document.getElementById('mainContent');
-    if (data.objekti.length === 0) {
+    var c = document.getElementById('mainContent');
+    if (!data.objekti || data.objekti.length === 0) {
         c.innerHTML = '<div class="no-data">Nema objekata. Kliknite "+ Novi objekat".</div>';
         return;
     }
-    let html = '<div class="grid">';
-    data.objekti.forEach(o => {
-        const brRadnika = (o.radnici || []).length;
-        html += `<div class="card" onclick="otvoriObjekt('${o.id}')">
-            <div class="actions" onclick="event.stopPropagation()">
-                <button class="btn btn-sm btn-warning" onclick="urediObjekt('${o.id}')">✏️</button>
-                <button class="btn btn-sm btn-danger" onclick="obrisiObjekt('${o.id}')">🗑</button>
-            </div>
-            <h3>🏢 ${o.naziv}</h3>
-            <div style="font-size: 13px; color: #666;">
-                ${o.adresa || ''}<br>
-                PIB: ${o.pib || '-'}<br>
-                👥 ${brRadnika} radnika
-            </div>
-        </div>`;
+    var html = '<div class="grid">';
+    data.objekti.forEach(function(o) {
+        var br = (o.radnici || []).length;
+        html += '<div class="card" onclick="otvoriObjekt(\'' + o.id + '\')">' +
+            '<div class="actions" onclick="event.stopPropagation()">' +
+            '<button class="btn btn-sm btn-warning" onclick="urediObjekt(\'' + o.id + '\')">✏️</button>' +
+            '<button class="btn btn-sm btn-danger" onclick="obrisiObjekt(\'' + o.id + '\')">🗑</button>' +
+            '</div>' +
+            '<h3>🏢 ' + (o.naziv || '') + '</h3>' +
+            '<div style="font-size:13px;color:#666;">' + (o.adresa || '') + '<br>PIB: ' + (o.pib || '-') + '<br>👥 ' + br + ' radnika</div>' +
+            '</div>';
     });
     html += '</div>';
     c.innerHTML = html;
 }
 
 function renderFolderi() {
-    const c = document.getElementById('mainContent');
-    const o = data.objekti.find(x => x.id === aktivniObjektId);
+    var c = document.getElementById('mainContent');
+    var o = data.objekti.find(function(x){ return x.id === aktivniObjektId; });
     if (!o) { aktivniObjektId = null; renderMain(); return; }
-    let html = `<div class="breadcrumb"><a onclick="idiNaObjekte()">🏢 Objekti</a> › <b>${o.naziv}</b></div>`;
+    var html = '<div class="breadcrumb"><a onclick="idiNaObjekte()">🏢 Objekti</a> › <b>' + o.naziv + '</b></div>';
     html += '<div class="grid">';
-    FOLDERI.forEach(f => {
-        const brDok = (o.radnici || []).filter(r => r.dokumenti && r.dokumenti[f.id]).length;
-        html += `<div class="card" onclick="otvoriFolder('${f.id}')" style="border-left-color: ${f.boja};">
-            <h3>${f.naziv}</h3>
-            <div style="font-size: 13px; color: #666;">👥 ${brDok} radnika sa dokumentima</div>
-        </div>`;
+    FOLDERI.forEach(function(f) {
+        var br = (o.radnici || []).filter(function(r){ return r.dokumenti && r.dokumenti[f.id]; }).length;
+        html += '<div class="card" onclick="otvoriFolder(\'' + f.id + '\')" style="border-left-color:' + f.boja + ';">' +
+            '<h3>' + f.naziv + '</h3>' +
+            '<div style="font-size:13px;color:#666;">👥 ' + br + ' radnika sa dokumentima</div></div>';
     });
     html += '</div>';
     c.innerHTML = html;
 }
 
 function renderRadnici() {
-    const c = document.getElementById('mainContent');
-    const o = data.objekti.find(x => x.id === aktivniObjektId);
-    const f = FOLDERI.find(x => x.id === aktivniFolder);
-    let html = `<div class="breadcrumb">
-        <a onclick="idiNaObjekte()">🏢 Objekti</a> › 
-        <a onclick="idiNaFoldere()">${o.naziv}</a> › 
-        <b>${f.naziv}</b>
-    </div>`;
-    html += '<div style="margin-bottom: 15px; display: flex; gap: 8px; flex-wrap: wrap;">';
+    var c = document.getElementById('mainContent');
+    var o = data.objekti.find(function(x){ return x.id === aktivniObjektId; });
+    var f = FOLDERI.find(function(x){ return x.id === aktivniFolder; });
+    var html = '<div class="breadcrumb"><a onclick="idiNaObjekte()">🏢 Objekti</a> › <a onclick="idiNaFoldere()">' + o.naziv + '</a> › <b>' + f.naziv + '</b></div>';
+    html += '<div style="margin-bottom:15px;display:flex;gap:8px;flex-wrap:wrap;">';
     html += '<button onclick="showUvoz()" class="btn btn-primary">📥 Uvezi radnike iz Excela</button>';
     html += '<button onclick="dodajRadnikaRucno()" class="btn btn-success">+ Dodaj ručno</button>';
     html += '</div>';
     if (!o.radnici || o.radnici.length === 0) {
-        html += '<div class="no-data">Nema radnika. Uvezite iz Excela ili dodajte ručno.</div>';
+        html += '<div class="no-data">Nema radnika.</div>';
     } else {
-        o.radnici.forEach((r, idx) => {
-            const imaDok = r.dokumenti && r.dokumenti[aktivniFolder];
-            html += `<div class="radnik-card">
-                <div class="radnik-info" onclick="generisiDokumente(${idx})">
-                    <strong>${r.ime || ''} ${r.prezime || ''}</strong>
-                    <small>Pasoš: ${r.pasos || '-'} | ${r.zanimanje || '-'} | ${r.mjesto_rodenja || '-'}</small>
-                    ${imaDok ? '<span class="badge" style="background:#d4edda;color:#155724;">✅ Ima dokumente</span>' : '<span class="badge" style="background:#fff3cd;color:#856404;">⚠️ Nema dokumenata</span>'}
-                </div>
-                <div style="display: flex; gap: 5px;">
-                    <button onclick="generisiDokumente(${idx})" class="btn btn-sm btn-info">📄 Generiši</button>
-                    <button onclick="urediRadnika(${idx})" class="btn btn-sm btn-warning">✏️</button>
-                    <button onclick="obrisiRadnika(${idx})" class="btn btn-sm btn-danger">🗑</button>
-                </div>
-            </div>`;
+        o.radnici.forEach(function(r, idx) {
+            var imaDok = r.dokumenti && r.dokumenti[aktivniFolder];
+            html += '<div class="radnik-card">' +
+                '<div class="radnik-info" onclick="generisiDokumente(' + idx + ')">' +
+                '<strong>' + (r.ime || '') + ' ' + (r.prezime || '') + '</strong>' +
+                '<small>Pasoš: ' + (r.pasos || '-') + ' | ' + (r.zanimanje || '-') + '</small>' +
+                (imaDok ? '<span class="badge" style="background:#d4edda;color:#155724;">✅ Ima dokumente</span>' : '<span class="badge" style="background:#fff3cd;color:#856404;">⚠️ Nema</span>') +
+                '</div>' +
+                '<div style="display:flex;gap:5px;">' +
+                '<button onclick="generisiDokumente(' + idx + ')" class="btn btn-sm btn-info">📄</button>' +
+                '<button onclick="urediRadnika(' + idx + ')" class="btn btn-sm btn-warning">✏️</button>' +
+                '<button onclick="obrisiRadnika(' + idx + ')" class="btn btn-sm btn-danger">🗑</button>' +
+                '</div></div>';
         });
     }
     c.innerHTML = html;
 }
 
+// ==================== NAVIGACIJA ====================
 function idiNaObjekte() { aktivniObjektId = null; aktivniFolder = null; renderMain(); }
 function idiNaFoldere() { aktivniFolder = null; renderMain(); }
 function otvoriObjekt(id) { aktivniObjektId = id; aktivniFolder = null; renderMain(); }
 function otvoriFolder(id) { aktivniFolder = id; renderMain(); }
 
-// ==================== OBJEKTI ====================
+// ==================== OBJEKTI CRUD ====================
 function showNoviObjekt() {
     editingObjektId = null;
     document.getElementById('objektTitle').textContent = 'Novi objekat';
-    ['Naziv','PIB','PDV','Adresa','Telefon','Email','Direktor','JMBG','Mjesto','Kontakt','Info'].forEach(k => {
+    ['Naziv','PIB','PDV','Adresa','Telefon','Email','Direktor','JMBG','Mjesto','Kontakt','Info'].forEach(function(k) {
         document.getElementById('obj' + k).value = '';
     });
     document.getElementById('objLogoPreview').innerHTML = '';
@@ -376,7 +380,7 @@ function showNoviObjekt() {
 }
 
 function urediObjekt(id) {
-    const o = data.objekti.find(x => x.id === id);
+    var o = data.objekti.find(function(x){ return x.id === id; });
     if (!o) return;
     editingObjektId = id;
     document.getElementById('objektTitle').textContent = 'Uredi objekat';
@@ -391,33 +395,33 @@ function urediObjekt(id) {
     document.getElementById('objMjesto').value = o.mjesto || '';
     document.getElementById('objKontakt').value = o.kontakt || '';
     document.getElementById('objInfo').value = o.info || '';
-    if (o.logo) document.getElementById('objLogoPreview').innerHTML = `<img src="${o.logo}" style="max-height: 80px;">`;
+    if (o.logo) document.getElementById('objLogoPreview').innerHTML = '<img src="' + o.logo + '" style="max-height:80px;">';
     showModal('objektModal');
 }
 
 async function sacuvajObjekt() {
-    const naziv = document.getElementById('objNaziv').value.trim();
+    var naziv = document.getElementById('objNaziv').value.trim();
     if (!naziv) { toast('Unesite naziv firme', true); return; }
-    const logo = document.getElementById('objLogoPreview').querySelector('img')?.src || null;
+    var logoEl = document.getElementById('objLogoPreview').querySelector('img');
+    var logo = logoEl ? logoEl.src : null;
     if (editingObjektId) {
-        const o = data.objekti.find(x => x.id === editingObjektId);
-        Object.assign(o, {
-            naziv,
-            pib: document.getElementById('objPIB').value,
-            pdv: document.getElementById('objPDV').value,
-            adresa: document.getElementById('objAdresa').value,
-            telefon: document.getElementById('objTelefon').value,
-            email: document.getElementById('objEmail').value,
-            direktor: document.getElementById('objDirektor').value,
-            jmbg: document.getElementById('objJMBG').value,
-            mjesto: document.getElementById('objMjesto').value,
-            kontakt: document.getElementById('objKontakt').value,
-            info: document.getElementById('objInfo').value
-        });
+        var o = data.objekti.find(function(x){ return x.id === editingObjektId; });
+        o.naziv = naziv;
+        o.pib = document.getElementById('objPIB').value;
+        o.pdv = document.getElementById('objPDV').value;
+        o.adresa = document.getElementById('objAdresa').value;
+        o.telefon = document.getElementById('objTelefon').value;
+        o.email = document.getElementById('objEmail').value;
+        o.direktor = document.getElementById('objDirektor').value;
+        o.jmbg = document.getElementById('objJMBG').value;
+        o.mjesto = document.getElementById('objMjesto').value;
+        o.kontakt = document.getElementById('objKontakt').value;
+        o.info = document.getElementById('objInfo').value;
         if (logo) o.logo = logo;
     } else {
         data.objekti.push({
-            id: 'o_' + Date.now(), naziv,
+            id: 'o_' + Date.now(),
+            naziv: naziv,
             pib: document.getElementById('objPIB').value,
             pdv: document.getElementById('objPDV').value,
             adresa: document.getElementById('objAdresa').value,
@@ -428,7 +432,8 @@ async function sacuvajObjekt() {
             mjesto: document.getElementById('objMjesto').value,
             kontakt: document.getElementById('objKontakt').value,
             info: document.getElementById('objInfo').value,
-            logo, radnici: []
+            logo: logo,
+            radnici: []
         });
     }
     await saveToCloud();
@@ -438,18 +443,18 @@ async function sacuvajObjekt() {
 }
 
 function ucitajLogo(event) {
-    const file = event.target.files[0];
+    var file = event.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        document.getElementById('objLogoPreview').innerHTML = `<img src="${e.target.result}" style="max-height: 80px;">`;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        document.getElementById('objLogoPreview').innerHTML = '<img src="' + e.target.result + '" style="max-height:80px;">';
     };
     reader.readAsDataURL(file);
 }
 
 async function obrisiObjekt(id) {
     if (!confirm('Obrisati objekat i sve radnike?')) return;
-    data.objekti = data.objekti.filter(x => x.id !== id);
+    data.objekti = data.objekti.filter(function(x){ return x.id !== id; });
     await saveToCloud();
     renderMain();
     toast('🗑 Obrisano');
@@ -464,75 +469,68 @@ function showUvoz() {
 }
 
 function parsirajUvoz() {
-    const tekst = document.getElementById('uvozTekst').value.trim();
+    var tekst = document.getElementById('uvozTekst').value.trim();
     if (!tekst) { toast('Zalijepi tekst!', true); return; }
-    const linije = tekst.split(/\r?\n/);
-    const radnici = [];
-    let trenutni = null;
-    linije.forEach(linija => {
+    var linije = tekst.split(/\r?\n/);
+    var radnici = [];
+    var trenutni = null;
+    linije.forEach(function(linija) {
         if (!linija.trim()) return;
-        let dijelovi;
-        if (linija.includes('\t')) dijelovi = linija.split('\t').map(x => x.trim());
-        else dijelovi = [linija.trim()];
-        const kljuc = (dijelovi[0] || '').toLowerCase().trim();
-        const vrijednost = (dijelovi[1] || '').trim();
+        var d = linija.indexOf('\t') >= 0 ? linija.split('\t').map(function(x){ return x.trim(); }) : [linija.trim()];
+        var kljuc = (d[0] || '').toLowerCase().trim();
+        var vrijednost = (d[1] || '').trim();
         if (!kljuc) return;
         if (kljuc === 'name' || kljuc === 'ime') {
             if (trenutni && (trenutni.ime || trenutni.pasos)) radnici.push(trenutni);
             trenutni = { ime: vrijednost };
-            if (dijelovi[4]) trenutni.zanimanje = dijelovi[4].trim();
+            if (d[4]) trenutni.zanimanje = d[4].trim();
             return;
         }
         if (!trenutni) trenutni = {};
         if (kljuc === 'surname' || kljuc === 'prezime') trenutni.prezime = vrijednost;
-        else if (kljuc.includes('place of birth') || kljuc === 'mjesto_rođenja') trenutni.mjesto_rodenja = vrijednost;
-        else if (kljuc === 'addrress' || kljuc === 'address' || kljuc === 'adresa') trenutni.adresa = vrijednost;
-        else if (kljuc.includes('place of passport')) trenutni.mjesto_izdavanja = vrijednost;
+        else if (kljuc.indexOf('place of birth') >= 0) trenutni.mjesto_rodenja = vrijednost;
+        else if (kljuc === 'address' || kljuc === 'addrress' || kljuc === 'adresa') trenutni.adresa = vrijednost;
+        else if (kljuc.indexOf('place of passport') >= 0) trenutni.mjesto_izdavanja = vrijednost;
         else if (kljuc === 'passport number' || kljuc === 'broj pasoša') trenutni.pasos = vrijednost;
-        else if (kljuc.includes('contact person')) trenutni.kontakt_osoba = vrijednost;
-        else if (kljuc.includes('workplace') || kljuc.includes('nominated')) trenutni.radno_mjesto = vrijednost;
+        else if (kljuc.indexOf('contact person') >= 0) trenutni.kontakt_osoba = vrijednost;
+        else if (kljuc.indexOf('workplace') >= 0 || kljuc.indexOf('nominated') >= 0) trenutni.radno_mjesto = vrijednost;
     });
     if (trenutni && (trenutni.ime || trenutni.pasos)) radnici.push(trenutni);
-    radnici.forEach(r => { if (!r.drzavljanstvo) r.drzavljanstvo = 'Egypt'; });
+    radnici.forEach(function(r) { if (!r.drzavljanstvo) r.drzavljanstvo = 'Egypt'; });
     trenutniUvoz = radnici;
     if (radnici.length === 0) {
         document.getElementById('uvozPreview').innerHTML = '<div class="info-box info-danger">❌ Nisam prepoznao nijednog radnika.</div>';
         return;
     }
-    let html = `<div class="info-box info-success">✅ Prepoznato <strong>${radnici.length}</strong> radnika:</div>`;
-    html += '<table><thead><tr><th>Ime</th><th>Pasoš</th><th>Zanimanje</th><th>Mjesto rođenja</th></tr></thead><tbody>';
-    radnici.forEach(r => {
-        html += `<tr>
-            <td><strong>${r.ime || ''} ${r.prezime || ''}</strong></td>
-            <td>${r.pasos || '-'}</td>
-            <td>${r.zanimanje || '-'}</td>
-            <td>${r.mjesto_rodenja || '-'}</td>
-        </tr>`;
+    var html = '<div class="info-box info-success">✅ Prepoznato <strong>' + radnici.length + '</strong> radnika:</div>';
+    html += '<table><thead><tr><th>Ime</th><th>Pasoš</th><th>Zanimanje</th></tr></thead><tbody>';
+    radnici.forEach(function(r) {
+        html += '<tr><td><strong>' + (r.ime || '') + ' ' + (r.prezime || '') + '</strong></td><td>' + (r.pasos || '-') + '</td><td>' + (r.zanimanje || '-') + '</td></tr>';
     });
     html += '</tbody></table>';
-    html += `<button onclick="potvrdiUvoz()" class="btn btn-success" style="width: 100%; padding: 12px; margin-top: 15px;">✅ Dodaj ${radnici.length} radnika</button>`;
+    html += '<button onclick="potvrdiUvoz()" class="btn btn-success" style="width:100%;padding:12px;margin-top:15px;">✅ Dodaj ' + radnici.length + ' radnika</button>';
     document.getElementById('uvozPreview').innerHTML = html;
 }
 
 async function potvrdiUvoz() {
-    const o = data.objekti.find(x => x.id === aktivniObjektId);
+    var o = data.objekti.find(function(x){ return x.id === aktivniObjektId; });
     if (!o) return;
     if (!o.radnici) o.radnici = [];
-    let dodano = 0;
-    trenutniUvoz.forEach(r => {
-        const postoji = o.radnici.find(x => x.pasos === r.pasos && r.pasos);
+    var dodano = 0;
+    trenutniUvoz.forEach(function(r) {
+        var postoji = o.radnici.find(function(x){ return x.pasos === r.pasos && r.pasos; });
         if (!postoji) { o.radnici.push(r); dodano++; }
     });
     await saveToCloud();
     closeModal('uvozModal');
     renderMain();
-    toast(`✅ Dodano ${dodano} radnika`);
+    toast('✅ Dodano ' + dodano + ' radnika');
 }
 
 // ==================== RADNIK CRUD ====================
 function dodajRadnikaRucno() {
     editingRadnikIndex = null;
-    ['Ime','Prezime','DatumRodjenja','MjestoRodjenja','Pasos','MjestoIzdavanja','DatumIzdavanja','DatumVazenja','Adresa','Zanimanje','Kontakt','RadnoMjesto','UgovorOd','UgovorDo','Plata','Roditelji'].forEach(k => {
+    ['Ime','Prezime','DatumRodjenja','MjestoRodjenja','Pasos','MjestoIzdavanja','DatumIzdavanja','DatumVazenja','Adresa','Zanimanje','Kontakt','RadnoMjesto','UgovorOd','UgovorDo','Plata','Roditelji'].forEach(function(k) {
         document.getElementById('rad' + k).value = '';
     });
     document.getElementById('radDrzavljanstvo').value = 'Egypt';
@@ -542,8 +540,8 @@ function dodajRadnikaRucno() {
 }
 
 function urediRadnika(idx) {
-    const o = data.objekti.find(x => x.id === aktivniObjektId);
-    const r = o.radnici[idx];
+    var o = data.objekti.find(function(x){ return x.id === aktivniObjektId; });
+    var r = o.radnici[idx];
     editingRadnikIndex = idx;
     document.getElementById('radIme').value = r.ime || '';
     document.getElementById('radPrezime').value = r.prezime || '';
@@ -568,10 +566,10 @@ function urediRadnika(idx) {
 }
 
 async function sacuvajRadnika() {
-    const o = data.objekti.find(x => x.id === aktivniObjektId);
+    var o = data.objekti.find(function(x){ return x.id === aktivniObjektId; });
     if (!o) return;
     if (!o.radnici) o.radnici = [];
-    const novi = {
+    var novi = {
         ime: document.getElementById('radIme').value.trim(),
         prezime: document.getElementById('radPrezime').value.trim(),
         datum_rodenja: document.getElementById('radDatumRodjenja').value.trim(),
@@ -593,8 +591,7 @@ async function sacuvajRadnika() {
         bracno: document.getElementById('radBracno').value
     };
     if (editingRadnikIndex !== null) {
-        const stari = o.radnici[editingRadnikIndex];
-        novi.dokumenti = stari.dokumenti || {};
+        novi.dokumenti = o.radnici[editingRadnikIndex].dokumenti || {};
         o.radnici[editingRadnikIndex] = novi;
     } else {
         o.radnici.push(novi);
@@ -606,8 +603,8 @@ async function sacuvajRadnika() {
 }
 
 async function obrisiRadnika(idx) {
-    if (!confirm('Obrisati radnika i sve dokumente?')) return;
-    const o = data.objekti.find(x => x.id === aktivniObjektId);
+    if (!confirm('Obrisati radnika?')) return;
+    var o = data.objekti.find(function(x){ return x.id === aktivniObjektId; });
     o.radnici.splice(idx, 1);
     await saveToCloud();
     renderMain();
@@ -616,890 +613,127 @@ async function obrisiRadnika(idx) {
 
 // ==================== GENERISANJE ====================
 function generisiDokumente(idx) {
-    const o = data.objekti.find(x => x.id === aktivniObjektId);
-    const r = o.radnici[idx];
-    const tipovi = TIPOVI_DOK[aktivniFolder] || [];
-    let html = `<div class="info-box info-info">
-        <strong>Radnik:</strong> ${r.ime} ${r.prezime}<br>
-        <strong>Pasoš:</strong> ${r.pasos || '-'}<br>
-        <strong>Državljanstvo:</strong> ${r.drzavljanstvo || '-'}
-    </div>`;
+    var o = data.objekti.find(function(x){ return x.id === aktivniObjektId; });
+    var r = o.radnici[idx];
+    var tipovi = TIPOVI_DOK[aktivniFolder] || [];
+    var html = '<div class="info-box info-info"><strong>Radnik:</strong> ' + r.ime + ' ' + r.prezime + '<br><strong>Pasoš:</strong> ' + (r.pasos || '-') + '</div>';
     html += '<div class="grid-2">';
-    html += '<div class="form-group"><label>Datum izdavanja dokumenta:</label>';
-    html += `<input type="date" id="genDatum" value="${new Date().toISOString().slice(0,10)}"></div>`;
-    html += '<div class="form-group"><label>Mjesto izdavanja:</label>';
-    html += `<input type="text" id="genMjesto" value="${o.mjesto || 'Budva'}"></div>`;
+    html += '<div class="form-group"><label>Datum:</label><input type="date" id="genDatum" value="' + new Date().toISOString().slice(0,10) + '"></div>';
+    html += '<div class="form-group"><label>Mjesto:</label><input type="text" id="genMjesto" value="' + (o.mjesto || 'Budva') + '"></div>';
     html += '</div>';
-    html += '<h3 style="margin-top: 20px; font-size: 16px;">Odaberi dokumente:</h3>';
-    html += '<div style="background: #f8f9fa; padding: 15px; border-radius: 6px;">';
-    tipovi.forEach(t => {
-        const ima = r.dokumenti && r.dokumenti[aktivniFolder] && r.dokumenti[aktivniFolder][t.id];
-        html += `<label style="display: block; padding: 8px; cursor: pointer;">
-            <input type="checkbox" class="genDok" value="${t.id}" ${ima ? 'checked' : ''} style="margin-right: 8px;">
-            ${t.naziv} ${ima ? '<span style="color:#28a745;">✓</span>' : ''}
-        </label>`;
+    html += '<h3 style="margin-top:20px;font-size:16px;">Odaberi dokumente:</h3>';
+    html += '<div style="background:#f8f9fa;padding:15px;border-radius:6px;">';
+    tipovi.forEach(function(t) {
+        var ima = r.dokumenti && r.dokumenti[aktivniFolder] && r.dokumenti[aktivniFolder][t.id];
+        html += '<label style="display:block;padding:8px;cursor:pointer;"><input type="checkbox" class="genDok" value="' + t.id + '" ' + (ima ? 'checked' : '') + ' style="margin-right:8px;">' + t.naziv + (ima ? ' <span style="color:#28a745;">✓</span>' : '') + '</label>';
     });
     html += '</div>';
-    html += `<button onclick="generisiOdabrane(${idx})" class="btn btn-success" style="width: 100%; padding: 14px; margin-top: 15px; font-size: 15px;">📄 Generiši dokumente</button>`;
+    html += '<button onclick="generisiOdabrane(' + idx + ')" class="btn btn-success" style="width:100%;padding:14px;margin-top:15px;font-size:15px;">📄 Generiši</button>';
     document.getElementById('generisiContent').innerHTML = html;
     showModal('generisiModal');
 }
 
 async function generisiOdabrane(idx) {
-    const o = data.objekti.find(x => x.id === aktivniObjektId);
-    const r = o.radnici[idx];
-    const datum = document.getElementById('genDatum').value;
-    const mjesto = document.getElementById('genMjesto').value;
-    const odabrani = Array.from(document.querySelectorAll('.genDok:checked')).map(c => c.value);
-    if (odabrani.length === 0) { toast('Odaberi barem jedan dokument', true); return; }
+    var o = data.objekti.find(function(x){ return x.id === aktivniObjektId; });
+    var r = o.radnici[idx];
+    var datum = document.getElementById('genDatum').value;
+    var mjesto = document.getElementById('genMjesto').value;
+    var odabrani = Array.from(document.querySelectorAll('.genDok:checked')).map(function(c){ return c.value; });
+    if (odabrani.length === 0) { toast('Odaberi barem jedan', true); return; }
     if (!r.dokumenti) r.dokumenti = {};
     if (!r.dokumenti[aktivniFolder]) r.dokumenti[aktivniFolder] = {};
-    odabrani.forEach(tip => {
-        r.dokumenti[aktivniFolder][tip] = { datum, mjesto, kreirano: new Date().toISOString() };
+    odabrani.forEach(function(tip) {
+        r.dokumenti[aktivniFolder][tip] = { datum: datum, mjesto: mjesto, kreirano: new Date().toISOString() };
     });
     await saveToCloud();
-    odabrani.forEach(tip => {
-        const html = generisiHTMLDokumenta(o, r, tip, datum, mjesto);
-        const win = window.open('', '_blank');
+    odabrani.forEach(function(tip) {
+        var html = generisiHTMLDokumenta(o, r, tip, datum, mjesto);
+        var win = window.open('', '_blank');
         win.document.write(html);
         win.document.close();
     });
     closeModal('generisiModal');
     renderMain();
-    toast(`📄 Generisano ${odabrani.length} dokumenata`);
+    toast('📄 Generisano ' + odabrani.length);
 }
 
-// ==================== HTML GENERATOR (ostali dokumenti) ====================
+// ==================== DOKUMENTI ====================
 function generisiHTMLDokumenta(o, r, tip, datum, mjesto) {
     if (tip === 'viza_obrazac') return generisiVizaObrazac(o, r, datum, mjesto);
-
-    const imePrezime = `${r.ime || ''} ${r.prezime || ''}`.trim();
-    const ime = r.ime || '';
-    const prezime = r.prezime || '';
-    const pasos = r.pasos || '';
-    const mjestoRodjenja = r.mjesto_rodenja || '';
-    const adresa = r.adresa || '';
-    const drzavljanstvo = r.drzavljanstvo || 'Egypt';
-    const mjestoIzdavanja = r.mjesto_izdavanja || '';
-    const datumIzdavanja = r.datum_izdavanja || '';
-    const datumVazenja = r.datum_vazenja || '';
-    const datumRodjenja = r.datum_rodenja || '';
-    const zanimanje = r.zanimanje || '';
-    const radnoMjesto = r.radno_mjesto || '';
-    const plata = r.plata || '800';
-    const ugovorOd = r.ugovor_od || '';
-    const ugovorDo = r.ugovor_do || '';
-
-    const memorandum = `
-        <div style="border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <div style="font-size: 16px; font-weight: bold;">${o.naziv || ''}</div>
-                <div style="font-size: 11px; margin-top: 4px;">
-                    ${o.adresa || ''}<br>
-                    ${o.telefon ? 'Tel: ' + o.telefon : ''} ${o.pib ? '| PIB: ' + o.pib : ''} ${o.pdv ? '| PDV: ' + o.pdv : ''}
-                </div>
-            </div>
-            ${o.logo ? `<img src="${o.logo}" style="max-height: 60px;">` : ''}
-        </div>
-    `;
-
-    let sadrzaj = '';
-
-    if (tip === 'confirmation') {
-        sadrzaj = `
-            <h2 style="text-align: center; margin: 30px 0;">CONFIRMATION LETTER</h2>
-            <p>To Whom it May Concern</p>
-            <p style="text-align: justify; line-height: 1.8; margin-top: 15px;">
-                That <strong>${imePrezime}</strong>, born on <strong>${datumRodjenja}</strong>, passport number <strong>${pasos}</strong> with permanent address on <strong>${adresa}</strong>, has been appointed to work in our company on the position of <strong>${zanimanje}</strong>. This letter is issued due to regulation of consular affairs and issuance of work permit and can not be used for other purposes. If you need additional information do not hesitate to contact us.
-            </p>
-            <p style="margin-top: 50px;">Sincerely,</p>
-            <p style="margin-top: 50px;"><strong>${o.direktor || ''}</strong><br>Executive Director</p>
-        `;
-    } else if (tip === 'invitation') {
-        sadrzaj = `
-            <h2 style="text-align: center; margin: 30px 0;">INVITATION LETTER</h2>
-            <p>To Whom it May Concern</p>
-            <p style="text-align: justify; line-height: 1.8; margin-top: 15px;">
-                That <strong>${imePrezime}</strong>, born on <strong>${datumRodjenja}</strong>, passport number <strong>${pasos}</strong> with permanent address on <strong>${adresa}</strong>, has been appointed to visit our hotel. This letter is issued due to regulation of consular affairs and issuance of visa and can not be used for other purposes. If you need additional information do not hesitate to contact us.
-            </p>
-            <p style="margin-top: 50px;">Sincerely,</p>
-            <p style="margin-top: 50px;"><strong>${o.direktor || ''}</strong><br>Executive Director</p>
-            <p style="margin-top: 30px;">${mjesto}, ${datum}</p>
-        `;
-    } else if (tip === 'invitation_legal' || tip === 'pozivno') {
-        sadrzaj = `
-            <h2 style="text-align: center; margin: 30px 0;">POZIVNO PISMO PRAVNOG LICA</h2>
-            <p style="text-align: justify; line-height: 1.8;">
-                <strong>${o.naziv}</strong> ${o.adresa}, MONTENEGRO (naziv i sjedište pravnog lica)<br><br>
-                PIB ${o.pib || ''} koju zastupa <strong>${o.direktor || ''}</strong> (poresko identifikacioni broj) (ime i prezime ovlašćenog lica)<br><br>
-                JMBG: ${o.jmbg || ''} (jedinstveni matični broj)<br><br>
-                1. <strong>${imePrezime}</strong> rođen <strong>${datumRodjenja}</strong>, ${mjestoRodjenja}<br><br>
-                Državljanin <strong>${drzavljanstvo}</strong>, nosilac putne isprave br. <strong>${pasos}</strong> izdate u ${mjestoIzdavanja} dana ${datumIzdavanja}, sa rokom važenja do ${datumVazenja}, sa prebivalištem/boravištem u ${adresa}, zanimanje <strong>${zanimanje}</strong>, zaposlen u ${o.naziv}.<br><br>
-                U posjetu ${o.naziv} u periodu od ${ugovorOd} do ${ugovorDo}, 1 (jedna) posjeta, s tim što će ukupno trajanje boravka imenovanog u Crnoj Gori biti 360 dana, u svrhu ZASNIVANJA RADNOG ODNOSA NA POSLOVIMA PREKO CIJELE GODINE.<br><br>
-                Imenovani će boraviti na adresi ${o.adresa}.<br><br>
-                Podaci za kontakt za sve detaljnije informacije: ${o.kontakt || o.telefon || ''}.
-            </p>
-            <p style="margin-top: 40px;">U ${mjesto}, ${datum}</p>
-            <p style="margin-top: 40px;"><strong>${o.direktor || ''}</strong><br>Executive Director</p>
-        `;
-    } else if (tip === 'ponuda') {
-        sadrzaj = `
-            <h2 style="text-align: center; margin: 30px 0;">PONUDA O RADU</h2>
-            <p style="text-align: justify; line-height: 1.8;">
-                <strong>${o.naziv}</strong>, ${o.adresa}, PIB: ${o.pib || ''}, PDV: ${o.pdv || ''}, kao poslodavac s jedne strane<br><br>
-                i<br><br>
-                <strong>${imePrezime}</strong>, državljanin ${drzavljanstvo}, broj pasoša <strong>${pasos}</strong> izdatog ${datumIzdavanja} – ${datumVazenja}, kao zaposleni sa druge strane.<br><br>
-                <strong>Član 1.</strong> ${o.naziv} planira da zasnuje radni odnos sa ${imePrezime}, državljaninom ${drzavljanstvo}. Zaposleni će obavljati poslove ${zanimanje} u ${radnoMjesto}, sa svim aktivnostima koje se odnose na ovo radno mjesto.<br><br>
-                <strong>Član 2.</strong> Zaposleni i Poslodavac prihvataju sva prava, obaveze i odgovornosti utvrđene zakonom.<br><br>
-                <strong>Član 3.</strong> Zaposleni zasniva radni odnos na određeno vrijeme u trajanju od ${ugovorOd} do ${ugovorDo}.<br><br>
-                <strong>Član 4.</strong> Zaposleni će obavljati poslove u ${mjesto}.<br><br>
-                <strong>Član 5.</strong> Zaposleni zasniva radni odnos sa punim radnim vremenom u trajanju od 8 časova dnevno.<br><br>
-                <strong>Član 6.</strong> Radno vrijeme iznosi 40 časova nedeljno, osam časova dnevno od 08:00 do 16:00 časova.<br><br>
-                <strong>Član 9.</strong> Zaposlenom pripada mjesečna zarada u iznosu od ${plata},00 EUR.<br><br>
-                <strong>Član 16.</strong> Ova ponuda je sačinjena u dva primjerka, a jedan primjerak se prilaže Ministarstvu unutrašnjih poslova u svrhu dobijanja dozvole za privremeni boravak i rad Zaposlenog.
-            </p>
-            <table style="width: 100%; margin-top: 50px;">
-                <tr>
-                    <td style="text-align: center;">Zaposleni<br><br><br>_________________________<br>${imePrezime}</td>
-                    <td style="text-align: center;">Poslodavac<br><br><br>_________________________<br>${o.direktor || ''}</td>
-                </tr>
-            </table>
-        `;
-    } else if (tip === 'izjava_smjestaj') {
-        sadrzaj = `
-            <h2 style="text-align: center; margin: 30px 0;">IZJAVA</h2>
-            <p style="text-align: justify; line-height: 1.8;">
-                Kojom <strong>${o.naziv}</strong>, PIB: ${o.pib || ''}, a kojeg zastupa Izvršni direktor <strong>${o.direktor || ''}</strong>, JMBG: ${o.jmbg || ''},
-            </p>
-            <p style="text-align: center; font-weight: bold; font-size: 18px; margin: 30px 0;">IZJAVLJUJEM DA</p>
-            <p style="text-align: justify; line-height: 2;">
-                <strong>${imePrezime}</strong>, državljanin/ka ${drzavljanstvo}, rođen/a dana ${datumRodjenja} godine, sa ličnom kartom broj _________, izdatom od strane _________, dana _________, koja važi do _________,<br><br>
-                stanuje u mom stanu na adresi ${adresa}, upisanom u "Listu nepokretnosti", kat.parcela _________,<br><br>
-                i ovim potvrđujem da je navedeno lice stambeno obezbijeđeno (bez novčane nadoknade).<br><br>
-                Ova izjava se koristi za regulisanje boravka za zaposlenje i u druge svrhe se ne može koristiti.
-            </p>
-            <p style="margin-top: 60px; text-align: right;"><strong>DAVALAC IZJAVE</strong><br><br>${o.direktor || ''}</p>
-        `;
-    } else if (tip === 'izjava_firma') {
-        sadrzaj = `
-            <h2 style="text-align: center; margin: 30px 0;">IZJAVA</h2>
-            <p style="text-align: justify; line-height: 1.8;">
-                ${o.info || o.naziv + ' posluje u oblasti ugostiteljstva.'}
-            </p>
-            <p style="text-align: justify; line-height: 1.8; margin-top: 15px;">
-                Ovim putem potvrđujemo da je <strong>${imePrezime}</strong>, rođen ${datumRodjenja} godine, broj pasoša <strong>${pasos}</strong>, sa stalnom adresom ${adresa}, imenovan da radi u našoj kompaniji na poziciji <strong>${zanimanje}</strong>.
-            </p>
-            <p style="text-align: justify; line-height: 1.8;">
-                Vrijeme trajanja ugovora: ${ugovorOd} - ${ugovorDo}. Planirana plata: ${plata} EUR.
-            </p>
-            <p style="text-align: justify; line-height: 1.8;">
-                Ova izjava se izdaje u svrhu regulisanja konzularnih poslova i dobijanja radne dozvole i ne može se koristiti u druge svrhe.
-            </p>
-            <p style="margin-top: 40px;">S poštovanjem,</p>
-            <p style="margin-top: 50px;"><strong>${o.direktor || ''}</strong><br>Izvršni direktor<br>${o.telefon ? 'Tel: ' + o.telefon : ''}</p>
-        `;
-    }
-
-    return `<!DOCTYPE html>
-    <html><head><meta charset="UTF-8"><title>${tip}</title>
-    <style>
-        @page { size: A4; margin: 20mm; }
-        body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; color: #000; padding: 20px; }
-        h2 { font-family: 'Arial', sans-serif; }
-        p { text-align: justify; margin: 10px 0; }
-        @media print { body { padding: 0; } }
-    </style></head>
-    <body>${memorandum}${sadrzaj}</body></html>`;
+    var ip = (r.ime || '') + ' ' + (r.prezime || '');
+    var sadrzaj = '<div style="border-bottom:2px solid #333;padding-bottom:15px;margin-bottom:25px;"><strong>' + (o.naziv || '') + '</strong><br>' + (o.adresa || '') + '<br>' + (o.telefon ? 'Tel: ' + o.telefon : '') + (o.pib ? ' | PIB: ' + o.pib : '') + '</div>';
+    sadrzaj += '<h2 style="text-align:center;margin:30px 0;">' + tip.toUpperCase() + '</h2>';
+    sadrzaj += '<p>Radnik: <strong>' + ip + '</strong></p>';
+    sadrzaj += '<p>Pasoš: ' + (r.pasos || '') + '</p>';
+    sadrzaj += '<p>Firma: ' + (o.naziv || '') + '</p>';
+    sadrzaj += '<p style="margin-top:50px;">Direktor: <strong>' + (o.direktor || '') + '</strong></p>';
+    return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + tip + '</title><style>body{font-family:Times New Roman,serif;font-size:12pt;padding:40px;}</style></head><body>' + sadrzaj + '</body></html>';
 }
 
-// ==================== VIZNI OBRAZAC (EDITABLE, 3 STRANICE) ====================
+// ==================== VIZA - POJEDNOSTAVLJENA VERZIJA ====================
 function generisiVizaObrazac(o, r, datum, mjesto) {
-    const ime = r.ime || '';
-    const prezime = r.prezime || '';
-    const pasos = r.pasos || '';
-    const mjestoRodjenja = r.mjesto_rodenja || '';
-    const adresa = r.adresa || '';
-    const drzavljanstvo = r.drzavljanstvo || 'Egypt';
-    const mjestoIzdavanja = r.mjesto_izdavanja || '';
-    const datumIzdavanja = r.datum_izdavanja || '';
-    const datumVazenja = r.datum_vazenja || '';
-    const datumRodjenja = r.datum_rodenja || '';
-    const zanimanje = r.zanimanje || '';
-    const radnoMjesto = r.radno_mjesto || '';
-    const roditelji = r.roditelji || '';
-    const pol = r.pol || 'M';
-    const bracno = r.bracno || 'Single';
-    const ugovorOd = r.ugovor_od || '';
-    const ugovorDo = r.ugovor_do || '';
-    const kontakt = r.kontakt_osoba || o.kontakt || o.telefon || '';
-    const radnikId = r.pasos || ('idx_' + Date.now());
-
-    const cb = (checked, label) =>
-        `<label class="cb-wrap"><span class="checkbox${checked ? ' checked' : ''}" onclick="this.classList.toggle('checked')"></span>${label}</label>`;
-
-    const v = (val) => `<span class="val" contenteditable="true">${val || ''}</span>`;
-
-    return `<!DOCTYPE html>
-<html><head><meta charset="UTF-8"><title>Zahtjev za vizu - ${ime} ${prezime}</title>
-<style>
-    @page { size: A4; margin: 8mm; }
-    * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; font-size: 8pt; color: #000; background: #888; }
-    .toolbar { position: fixed; top: 0; left: 0; right: 0; background: #222; color: #fff; padding: 8px 15px; display: flex; gap: 8px; align-items: center; z-index: 9999; font-size: 13px; font-family: 'Segoe UI', sans-serif; }
-    .toolbar button { padding: 7px 14px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; }
-    .toolbar .btn-save { background: #28a745; color: #fff; }
-    .toolbar .btn-print { background: #17a2b8; color: #fff; }
-    .toolbar .btn-close { background: #dc3545; color: #fff; }
-    .toolbar .status { margin-left: auto; color: #aaa; font-size: 12px; }
-    .pages { padding-top: 55px; }
-    .page { width: 194mm; height: 281mm; background: #fff; margin: 10px auto; padding: 0; position: relative; page-break-after: always; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
-    .page:last-child { page-break-after: auto; }
-    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    td, th { border: 0.6pt solid #000; padding: 2px 3px; vertical-align: top; }
-    .lbl { font-size: 6.3pt; font-weight: bold; line-height: 1.15; }
-    .lbl-sub { font-size: 5.8pt; font-style: italic; line-height: 1.15; color: #222; }
-    .num { font-size: 7pt; font-weight: bold; text-align: center; width: 6mm; }
-    .val { display: inline-block; min-width: 30px; min-height: 11px; font-size: 8.5pt; font-weight: bold; border-bottom: 0.5pt dotted #ccc; padding: 0 2px; outline: none; }
-    .val:focus { background: #fffbe6; border-bottom: 0.5pt solid #f0c000; }
-    .val-empty { display: block; min-height: 14px; width: 100%; font-size: 8.5pt; font-weight: bold; border: none; outline: none; padding: 1px 2px; }
-    .val-empty:focus { background: #fffbe6; }
-    .cb-wrap { display: inline-flex; align-items: center; gap: 3px; font-size: 6.5pt; margin-right: 8px; vertical-align: middle; cursor: pointer; user-select: none; }
-    .checkbox { display: inline-block; width: 7px; height: 7px; border: 0.8pt solid #000; background: #fff; position: relative; flex-shrink: 0; cursor: pointer; }
-    .checkbox.checked { background: #000; }
-    .checkbox.checked::after { content: "✓"; color: #fff; font-size: 7pt; font-weight: bold; position: absolute; top: -2px; left: 0.3px; line-height: 1; }
-    .header-title { text-align: center; font-weight: bold; }
-    .title-main { font-size: 11pt; letter-spacing: 0.5px; }
-    .title-sub { font-size: 8pt; font-style: italic; }
-    .title-fr { font-size: 7pt; font-style: italic; }
-    .photo-cell { width: 40mm; text-align: center; padding: 4px; }
-    .photo-box { width: 35mm; height: 45mm; border: 0.8pt solid #000; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 7pt; color: #555; text-align: center; background: #fafafa; }
-    .section-title { font-size: 6.5pt; font-weight: bold; text-align: center; background: #f0f0f0; padding: 2px; }
-    .official-row { background: #f5f5f5; }
-    .sig-line { border-bottom: 0.6pt solid #000; height: 22px; }
-    .right-side { width: 42mm; vertical-align: top; padding: 3px; }
-    .right-side .section-title { font-size: 6pt; }
-    .napomene-line { border-bottom: 0.5pt dotted #666; height: 10px; margin: 1px 0; }
-    .statement-box { font-size: 5.6pt; line-height: 1.25; padding: 4px; text-align: justify; }
-    .statement-box p { margin: 0 0 3px 0; }
-    @media print {
-        body { background: #fff; }
-        .toolbar { display: none !important; }
-        .pages { padding-top: 0; }
-        .page { margin: 0; box-shadow: none; }
-        .val, .val-empty { border-bottom: none; }
-        .val:focus, .val-empty:focus { background: transparent; }
-        .checkbox { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    }
-</style>
-</head>
-<body>
-
-<div class="toolbar">
-    <strong>📄 Zahtjev za vizu</strong>
-    <span style="color:#aaa;font-size:11px;">${ime} ${prezime} — ${pasos}</span>
-    <button class="btn-save" onclick="sacuvajVizu('${radnikId}')">💾 Sačuvaj izmjene</button>
-    <button class="btn-print" onclick="window.print()">🖨️ Štampaj / PDF</button>
-    <button class="btn-close" onclick="window.close()">✖ Zatvori</button>
-    <span class="status" id="statusMsg">Klikni na bilo koje polje da mijenjaš</span>
-</div>
-
-<div class="pages" id="vizaRoot" data-radnik="${radnikId}" data-objekt="${o.id}">
-
-<!-- STRANICA 1 -->
-<div class="page">
-<table>
-    <tr>
-        <td rowspan="3" class="photo-cell">
-            <div class="photo-box">fotografija<br>photo<br>35 x 45 mm</div>
-        </td>
-        <td colspan="2" class="header-title" style="padding:6px;">
-            <div class="title-main" contenteditable="true">ZAHTJEV ZA VIZU</div>
-            <div class="title-sub" contenteditable="true">VISA APPLICATION</div>
-            <div class="title-fr" contenteditable="true">DEMANDE DU VISA</div>
-        </td>
-    </tr>
-    <tr>
-        <td colspan="2" class="section-title">
-            ${cb(false,'')} <span contenteditable="true">IZDAVANJE / ISSUANCE / DÉLIVRANCE</span>
-        </td>
-    </tr>
-    <tr>
-        <td colspan="2" class="section-title">
-            ${cb(false,'')} <span contenteditable="true">PRODUŽENJE / EXTENSION / PROROGATION</span>
-        </td>
-    </tr>
-</table>
-
-<table style="margin-top:-0.6pt;">
-    <tr>
-        <td colspan="2" style="text-align:right; font-size:6pt; font-style:italic; padding:3px;" contenteditable="true">
-            prijemni štambil / stamp of receipt / cachet de reception
-        </td>
-    </tr>
-</table>
-
-<table style="margin-top:-0.6pt;">
-    <tr>
-        <td class="num">1.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Prezime (bivše odnosno rođeno prezime)</div>
-            <div class="lbl-sub" contenteditable="true">Surname (also maiden surname for married women)</div>
-            <div class="lbl-sub" contenteditable="true">Nom (aussi nom de jeune fille pour les femmes mariées)</div>
-            <div style="margin-top:3px;">${v(prezime)}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">2.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Ime</span> <span class="lbl-sub" contenteditable="true">/ Given name(s) / Prénom(s)</span></div>
-            <div style="margin-top:3px;">${v(ime)}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">3.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Ime oca i majke</span> <span class="lbl-sub" contenteditable="true">/ Given name(s) of father and mother / Prénom(s) du père et de la mère</span></div>
-            <div style="margin-top:3px;">${v(roditelji)}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">4.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Datum rođenja</span> <span class="lbl-sub" contenteditable="true">/ Date of birth / Date de naissance</span></div>
-            <div style="margin-top:3px;">${v(datumRodjenja)}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">5.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Mjesto i država rođenja</span> <span class="lbl-sub" contenteditable="true">/ Place and country of birth / Lieu et pays de naissance</span></div>
-            <div style="margin-top:3px;">${v(mjestoRodjenja)}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">6.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Sadašnje državljanstvo/državljanstva</div>
-            <div class="lbl-sub" contenteditable="true">Current nationality/nationalities / Nationalité/nationalités actuelle</div>
-            <div style="margin-top:3px;">${v(drzavljanstvo)}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">7.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Državljanstvo pri rođenju</div>
-            <div class="lbl-sub" contenteditable="true">Original nationality (nationality at birth) / Nationalité d'origine (à la naissance)</div>
-            <div style="margin-top:3px;">${v(drzavljanstvo)}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">8.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Pol / Sex / Sexe</div>
-            <div style="margin-top:4px;">
-                ${cb(pol === 'M', '<span contenteditable="true">Muški / Male / Masculin</span>')}
-                &nbsp;&nbsp;
-                ${cb(pol === 'Ž', '<span contenteditable="true">Ženski / Female / Féminin</span>')}
-            </div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">9.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Bračno stanje / Marital status / Situation de familiale</div>
-            <div style="margin-top:4px;">
-                ${cb(bracno === 'Single', '<span contenteditable="true">Neoženjen/neudata / Single / Célibataire</span>')}
-                ${cb(bracno === 'Married', '<span contenteditable="true">Oženjen/udata / Married / Marié(e)</span>')}
-                ${cb(bracno === 'Divorced', '<span contenteditable="true">Razveden(a) / Divorced / Divorcé(e)</span>')}
-            </div>
-            <div style="margin-top:2px;">
-                ${cb(bracno === 'Separated', '<span contenteditable="true">Odvojen(a) / Separated / Séparé(e)</span>')}
-                ${cb(bracno === 'Widow', '<span contenteditable="true">Udovac(a) / Widow(er) / Veuf(veuve)</span>')}
-                ${cb(bracno === 'Other', '<span contenteditable="true">Ostalo / Other / Autre</span>')}
-            </div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">10.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Vrsta putne isprave / Type of passport / Type de passeport</div>
-            <div style="margin-top:4px;">
-                ${cb(true, '<span contenteditable="true">Običan pasoš / National passport / Passeport ordinaire</span>')}
-                ${cb(false, '<span contenteditable="true">Diplomatski pasoš / Diplomatic passport / Passeport diplomatique</span>')}
-            </div>
-            <div style="margin-top:2px;">
-                ${cb(false, '<span contenteditable="true">Službeni pasoš / Service passport / Passeport officiel</span>')}
-            </div>
-            <div style="margin-top:2px;">
-                ${cb(false, '<span contenteditable="true">Putna isprava po Konvenciji iz 1951. / Travel document (1951 Convention) / Document de voyage selon la Convention de 1951</span>')}
-            </div>
-            <div style="margin-top:2px;">
-                ${cb(false, '<span contenteditable="true">Putna isprava po Konvenciji iz 1954. / Travel document (1954 Convention) / Document de voyage selon la Convention de 1954</span>')}
-            </div>
-            <div style="margin-top:2px;">
-                ${cb(false, '<span contenteditable="true">Druga putna isprava (navesti koja) / Other travel document (please specify) / Autre document de voyage (Prière de spécifier lequel)</span>')}
-            </div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">11.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Broj putne isprave</span> <span class="lbl-sub" contenteditable="true">/ Number of passport / Numéro du document de voyage</span></div>
-            <div style="margin-top:3px;">${v(pasos)}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">12.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Izdata od</span> <span class="lbl-sub" contenteditable="true">/ Issued by / Délivré par</span></div>
-            <div style="margin-top:3px;">${v(mjestoIzdavanja)}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">13.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Datum izdavanja</span> <span class="lbl-sub" contenteditable="true">/ Date of issue / Date de délivrance</span></div>
-            <div style="margin-top:3px;">${v(datumIzdavanja)}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">14.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Rok važenja</span> <span class="lbl-sub" contenteditable="true">/ Valid until / Date d'expiration de la validité</span></div>
-            <div style="margin-top:3px;">${v(datumVazenja)}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">15.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Broj lične karte (nije obavezno)</span> <span class="lbl-sub" contenteditable="true">/ ID-number (optional) / Numéro de carte d'identité (facultatif)</span></div>
-            <div style="margin-top:3px;">${v('')}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">16.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Ako boravite u zemlji koja nije vaša zemlja porijekla, imate li dozvolu za povratak?</div>
-            <div class="lbl-sub" contenteditable="true">If you reside in a country other than your country of origin, have you permission to return to that country?</div>
-            <div class="lbl-sub" contenteditable="true">Si vous résidez dans un pays autre que votre pays d'origine, êtes-vous autorisé(e) à retourner dans ce pays?</div>
-            <div style="margin-top:4px;">
-                ${cb(false, '<span contenteditable="true">NE / NO / NON</span>')}
-                ${cb(false, '<span contenteditable="true">DA (broj i važenje) / YES (number and validity) / OUI (Numéro et validité)</span>')}
-            </div>
-        </td>
-    </tr>
-</table>
-
-<table style="margin-top:-0.6pt;">
-    <tr>
-        <td colspan="2" class="section-title" style="background:#e0e0e0; font-size:7pt;" contenteditable="true">
-            Popunjava službeno lice / To be filled out by official person / A remplir par le fonctionnaire
-        </td>
-    </tr>
-    <tr class="official-row">
-        <td style="width:50%;">
-            <div class="lbl" contenteditable="true">Datum obrade zahtjeva / Date application / Date d'introduction de la demande</div>
-            <div class="val-empty" contenteditable="true"></div>
-        </td>
-        <td style="width:50%;">
-            <div class="lbl" contenteditable="true">Potpis službenog lica / File handled by / Responsable du dossier</div>
-            <div class="sig-line"></div>
-        </td>
-    </tr>
-    <tr class="official-row">
-        <td colspan="2">
-            <div class="lbl" contenteditable="true">Priložena dokumentacija / Supporting documents / Documents justificatifs</div>
-            <div style="margin-top:4px; line-height:1.6;">
-                ${cb(false, '<span contenteditable="true">Važeći pasoš / Valid passport / Passeport en cours de validité</span>')}
-                ${cb(false, '<span contenteditable="true">Novčana sredstva za izdržavanje / Financial means / Moyens financiers</span>')}
-                <br>
-                ${cb(false, '<span contenteditable="true">Poziv / Invitation / Invitation</span>')}
-                ${cb(false, '<span contenteditable="true">Način putovanja / Means of transport / Moyens de transport</span>')}
-                <br>
-                ${cb(false, '<span contenteditable="true">Putno osiguranje / Travel insurance / Assurance voyage</span>')}
-                ${cb(false, '<span contenteditable="true">Drugo / Other / Autres</span>')}
-            </div>
-        </td>
-    </tr>
-    <tr class="official-row">
-        <td colspan="2">
-            <div class="lbl" contenteditable="true">Viza / Visa</div>
-            <div style="margin-top:4px;">
-                ${cb(false, '<span contenteditable="true">Odbijena / Refused / Refusé</span>')}
-                &nbsp;&nbsp;&nbsp;
-                ${cb(false, '<span contenteditable="true">Odobrena / Approved / Accordé</span>')}
-            </div>
-        </td>
-    </tr>
-</table>
-</div>
-
-<!-- STRANICA 2 -->
-<div class="page">
-<table>
-    <tr>
-        <td class="num" style="vertical-align:top;">17.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Zanimanje / Current occupation / Occupation actuelle</div>
-            <div style="margin-top:3px;">${v(zanimanje)}</div>
-        </td>
-        <td class="right-side" rowspan="16">
-            <div class="section-title" contenteditable="true">Vrsta vize<br>Type of visa<br>Type de visa</div>
-            <div style="margin-top:3px;">
-                ${cb(false,'A')} &nbsp; ${cb(false,'B')} &nbsp; ${cb(false,'C')} &nbsp; ${cb(true,'D')}
-            </div>
-            <div class="section-title" style="margin-top:6px;" contenteditable="true">Broj ulazaka<br>Number of entries<br>Nombre d'entrées</div>
-            <div style="margin-top:3px;">
-                ${cb(true,'1')} &nbsp; ${cb(false,'2')} &nbsp; ${cb(false,'N')}
-            </div>
-            <div class="section-title" style="margin-top:6px;" contenteditable="true">Rok važenja<br>Period of validity<br>Période de validité</div>
-            <div style="margin-top:3px;font-size:6pt;" contenteditable="true">od / from / du</div>
-            <div class="napomene-line" contenteditable="true"></div>
-            <div style="font-size:6pt;" contenteditable="true">do / to / au</div>
-            <div class="napomene-line" contenteditable="true"></div>
-            <div class="section-title" style="margin-top:6px;" contenteditable="true">Trajanje boravka<br>Duration of stay<br>Durée du séjour</div>
-            <div style="margin-top:3px;font-size:6pt;" contenteditable="true">Dana / Days / Jours</div>
-            <div class="napomene-line" contenteditable="true"></div>
-            <div class="section-title" style="margin-top:6px;" contenteditable="true">Napomene<br>Remarks<br>Remarques</div>
-            <div class="napomene-line" contenteditable="true"></div>
-            <div class="napomene-line" contenteditable="true"></div>
-            <div class="napomene-line" contenteditable="true"></div>
-            <div class="napomene-line" contenteditable="true"></div>
-            <div class="napomene-line" contenteditable="true"></div>
-            <div class="napomene-line" contenteditable="true"></div>
-            <div class="napomene-line" contenteditable="true"></div>
-            <div class="napomene-line" contenteditable="true"></div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num" style="vertical-align:top;">18.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Poslodavac (naziv, adresa, broj telefona), za studente/učenike naziv i adresa škole</div>
-            <div class="lbl-sub" contenteditable="true">Employer and employers address and telephone number. For students, name and address of school</div>
-            <div class="lbl-sub" contenteditable="true">Employeur, adresse et numéro de téléphone de l'employeur. Pour les étudiants, nom et adresse de l'établissement d'enseignement.</div>
-            <div style="margin-top:3px;">${v((o.naziv||'') + ' — ' + (o.adresa||'') + (o.telefon ? ' — ' + o.telefon : ''))}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num" style="vertical-align:top;">19.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Država odredišta</span> <span class="lbl-sub" contenteditable="true">/ Main destination / Destination principale</span></div>
-            <div style="margin-top:3px;">${v('Crna Gora / Montenegro')}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num" style="vertical-align:top;">20.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Druge vize izdate u posljednje tri godine i period njihovog važenja</div>
-            <div class="lbl-sub" contenteditable="true">Other visas (issued during the past three years) and their period of validity</div>
-            <div class="lbl-sub" contenteditable="true">Autres visas (délivrées au cours des trois dernières années) et leur durée de validité</div>
-            <div class="val-empty" contenteditable="true"></div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num" style="vertical-align:top;">21.</td>
-        <td>
-            <div class="lbl" contenteditable="true">U slučaju tranzita, imate li dozvolu ulaska u treću zemlju?</div>
-            <div class="lbl-sub" contenteditable="true">In the case of transit, have you an entry permit for the final country of destination?</div>
-            <div class="lbl-sub" contenteditable="true">En cas de transit, avez-vous une autorisation d'entrée dans le pays de destination finale?</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num" style="vertical-align:top;">22.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Vrsta vize / Type of visa / Type de visa</div>
-            <div style="margin-top:4px;">
-                ${cb(false, '<span contenteditable="true">Aerodromsko-tranzitna (A) / Airport transit (A) / Transit aéroportuaire (A)</span>')}
-                ${cb(false, '<span contenteditable="true">Tranzitna (B) / Transit (B) / Transit (B)</span>')}
-            </div>
-            <div style="margin-top:2px;">
-                ${cb(false, '<span contenteditable="true">Putna (C) / Travel (C) / De voyage (C)</span>')}
-                ${cb(true, '<span contenteditable="true">Viza na duži boravak (D) / Long stay visa (D) / Visa pour long séjour (D)</span>')}
-            </div>
-            <div style="margin-top:2px;">
-                ${cb(true, '<span contenteditable="true">Individualna / Individual / Individuel</span>')}
-                ${cb(false, '<span contenteditable="true">Kolektivna / Collective / Collectif</span>')}
-            </div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num" style="vertical-align:top;">23.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Broj ulazaka / Number of entries / Nombre d'entrées demandées</div>
-            <div style="margin-top:4px;">
-                ${cb(true, '<span contenteditable="true">Jedan / One / Une</span>')}
-                ${cb(false, '<span contenteditable="true">Dva / Two / Deux</span>')}
-                ${cb(false, '<span contenteditable="true">Neograničen / Multiple / Multiples</span>')}
-            </div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num" style="vertical-align:top;">24.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Trajanje boravka</span> <span class="lbl-sub" contenteditable="true">/ Duration of stay / Durée du séjour</span></div>
-            <div style="margin-top:3px;text-align:center;">
-                <span contenteditable="true">______</span> <span class="lbl-sub" contenteditable="true">dana / days / jours</span>
-            </div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num" style="vertical-align:top;">25.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Svrha putovanja / Purpose of travel / But de voyage</div>
-            <div style="margin-top:4px;">
-                ${cb(false, '<span contenteditable="true">Službeno / Official / Officielle</span>')}
-                ${cb(false, '<span contenteditable="true">Turizam / Tourism / Tourisme</span>')}
-            </div>
-            <div>
-                ${cb(false, '<span contenteditable="true">Kultura/sport / Cultural/Sports / Culture/sport</span>')}
-                ${cb(false, '<span contenteditable="true">Poslovno / Business / Affaires</span>')}
-            </div>
-            <div>
-                ${cb(false, '<span contenteditable="true">Privatna posjeta / Visit to Family or Friends / Visite à la famille ou à des amis</span>')}
-            </div>
-            <div>
-                ${cb(false, '<span contenteditable="true">Zdravstveni razlozi / Medical reasons / Raisons médicales</span>')}
-                ${cb(true, '<span contenteditable="true">Ostalo (molimo navesti) / Other (please specify) / Autres (à préciser)</span>')}
-            </div>
-            <div class="val-empty" contenteditable="true">Zasnivanje radnog odnosa</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num" style="vertical-align:top;">26.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Fizičko ili pravno lice koje posjećujete (ime, adresa, broj telefona i faksa, e-mail)</div>
-            <div class="lbl-sub" contenteditable="true">Natural or legal person you are visiting (Name, address, telephone, e-mail)</div>
-            <div class="lbl-sub" contenteditable="true">Personne physique ou personne civile que vous visitez (Nom, adresse, téléphone, e-mail)</div>
-            <div style="margin-top:3px;">${v((o.naziv||'') + ', ' + (o.adresa||'') + (o.telefon ? ', Tel: ' + o.telefon : '') + (o.email ? ', ' + o.email : ''))}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num" style="vertical-align:top;">27.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Adresa boravka u Crnoj Gori</div>
-            <div class="lbl-sub" contenteditable="true">Address where you will be staying in the Montenegro</div>
-            <div class="lbl-sub" contenteditable="true">Adresse du séjour de la Monténégro</div>
-            <div style="margin-top:3px;">${v(o.adresa || '')}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num" style="vertical-align:top;">28.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Ko snosi troškove putovanja i boravka?</div>
-            <div class="lbl-sub" contenteditable="true">Who is paying for your costs of travelling and for your costs of living during your stay?</div>
-            <div class="lbl-sub" contenteditable="true">Qui finance le voyage et subvient à vos besoins durant votre séjour?</div>
-            <div style="margin-top:4px;">
-                ${cb(false, '<span contenteditable="true">Lično / Myself / Moi-même</span>')}
-                ${cb(false, '<span contenteditable="true">Fizičko lice/pozivalac / Host person(s) / Host person(s)</span>')}
-                ${cb(true, '<span contenteditable="true">Pravno lice (koje i kako) / Host company (state who and how) / Société hôte (indiquer les nom et modalité)</span>')}
-            </div>
-            <div class="val-empty" contenteditable="true">${o.naziv || ''}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num" style="vertical-align:top;">29.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Novčana sredstva za izdržavanje</div>
-            <div class="lbl-sub" contenteditable="true">Means of support during your stay / Moyens de financement utilisés au cours du séjour</div>
-            <div style="margin-top:4px;">
-                ${cb(false, '<span contenteditable="true">Gotovina / Cash / Argent liquide</span>')}
-                ${cb(false, '<span contenteditable="true">Putnički čekovi / Travellers cheques / Chèques de voyage</span>')}
-            </div>
-            <div>
-                ${cb(false, '<span contenteditable="true">Kreditne kartice / Credit cards / Cartes de crédit</span>')}
-                ${cb(true, '<span contenteditable="true">Smještaj / Accommodation / Hébergement</span>')}
-            </div>
-            <div>
-                ${cb(false, '<span contenteditable="true">Drugo / Other / Autres</span>')}
-            </div>
-            <div style="margin-top:2px;">
-                ${cb(true, "<span contenteditable=\"true\">Putno ili zdravstveno osiguranje. Važi do / Travel and/or health insurance. Valid until / Assurance voyage et/ou assurance maladie. Valable jusqu'au:</span>")}
-            </div>
-            <div class="val-empty" contenteditable="true"></div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">30.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Datum dolaska</span> <span class="lbl-sub" contenteditable="true">/ Date of arrival / Date d'arrivée</span></div>
-            <div style="margin-top:3px;">${v(ugovorOd)}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">31.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Datum odlaska</span> <span class="lbl-sub" contenteditable="true">/ Date of departure / Date de départ</span></div>
-            <div style="margin-top:3px;">${v(ugovorDo)}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">32.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Način putovanja</span> <span class="lbl-sub" contenteditable="true">/ Means of transport / Moyens de transport</span></div>
-            <div style="margin-top:3px;">${v('Avionom / Airplane')}</div>
-        </td>
-    </tr>
-</table>
-</div>
-
-<!-- STRANICA 3 -->
-<div class="page">
-<table>
-    <tr>
-        <td class="num">33.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Ime bračnog druga</span> <span class="lbl-sub" contenteditable="true">/ Spouse's first name / Prénom du conjoint</span></div>
-            <div class="val-empty" contenteditable="true"></div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">34.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Prezime bračnog druga</span> <span class="lbl-sub" contenteditable="true">/ Spouse's family name / Nom de famille du conjoint</span></div>
-            <div class="val-empty" contenteditable="true"></div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">35.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Prezime bračnog druga pri rođenju</div>
-            <div class="lbl-sub" contenteditable="true">Spouse's family name at birth / Nom de famille du conjoint à la naissance</div>
-            <div class="val-empty" contenteditable="true"></div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">36.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Datum rođenja bračnog druga</span> <span class="lbl-sub" contenteditable="true">/ Spouse's date of birth / Date de naissance du conjoint</span></div>
-            <div class="val-empty" contenteditable="true"></div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">37.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Mjesto rođenja bračnog druga</span> <span class="lbl-sub" contenteditable="true">/ Spouse place of birth / Lieu de naissance du conjoint</span></div>
-            <div class="val-empty" contenteditable="true"></div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">38.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Djeca / Children / Enfants — Ime i prezime / Name and first name / Nom-Prénom — Datum rođenja / Date of birth / Date de naissance</div>
-            <table style="margin-top:4px;">
-                <tr><td class="num">1.</td><td class="val-empty" contenteditable="true"></td><td class="val-empty" contenteditable="true" style="width:35%;"></td></tr>
-                <tr><td class="num">2.</td><td class="val-empty" contenteditable="true"></td><td class="val-empty" contenteditable="true" style="width:35%;"></td></tr>
-                <tr><td class="num">3.</td><td class="val-empty" contenteditable="true"></td><td class="val-empty" contenteditable="true" style="width:35%;"></td></tr>
-            </table>
-        </td>
-    </tr>
-    <tr>
-        <td class="num" style="vertical-align:top;">39.</td>
-        <td>
-            <div class="statement-box" contenteditable="true">
-                <p><strong>Pri punoj svijesti izjavljujem i pristajem na sljedeće:</strong> svi moji lični podaci koji se navode na ovom obrascu zahtjeva za vizu proslijediće se, ako je potrebno, na rješavanje i provjeru nadležnim organima Crne Gore, u cilju odlučivanja o ovom zahtjevu. Na moje izričito traženje, organ koji odlučuje o mom zahtjevu obavijestiće me o načinu, propisanom crnogorskim zakonodavstvom, na koji mogu ostvariti pravo na provjeru svojih ličnih podataka, te njihovu izmjenu ili brisanje, naročito ako bi bili netačni. Izjavljujem da su svi podaci koje sam naveo/la u ovom obrascu istiniti i tačni. Svjestan sam da će bilo koja lažna izjava imati za posljedicu odbijanje mog zahtjeva ili poništenje već izdate vize. Obavezujem se da ću napustiti državnu teritoriju Crne Gore po isteku roka važenja vize, ako mi viza bude izdata. Obaviješten sam da je viza samo jedan od uslova za ulazak na državnu teritoriju Crne Gore. Svi uslovi za ulazak ponovo će biti provjereni pri ulasku na državnu teritoriju Crne Gore.</p>
-                <p><strong>I am aware of and consent to the following:</strong> any personal data concerning me which appear on this visa application form will be supplied to the relevant authorities of Montenegro and processed by those authorities. At my express request, the consular authority processing my application will inform me of the manner in which I may exercise my right to check the personal data concerning me and have them altered or deleted, in particular, should they be inaccurate. I declare that to the best of my knowledge all particulars supplied by me are correct and complete. I am aware that any false statements will lead to my application being rejected or to the annulment of a visa already granted. I undertake to leave the territory of Montenegro upon the expiry of the visa, if granted. I have been informed that possession of a visa is only one of the prerequisites for entry the territory of Montenegro. The prerequisites for entry will be checked again on entry into Montenegro.</p>
-                <p><strong>En connaissance de cause, j'accepte que</strong> les données à caractère personnel me concernant qui figurent dans le présent formulaire de demande de visa soient communiquées aux autorités compétentes du Monténégro pour que celles-ci puissent en prendre décision. A ma demande expresse, l'autorité consulaire qui a instruit ma demande m'informera de la manière dont je peux exercer mon droit à vérifier les données à caractère personnel me concernant et à les faire modifier ou supprimer, notamment si elles sont inexactes. Je déclare qu'à ma connaissance toutes les indications, que j'ai fournies sont correctes et complètes. Je suis conscient de ce que toute fausse déclaration entraînera le rejet de ma demande ou l'annulation du visa s'il a déjà été délivré. Je m'engage à abandonner le territoire national du Monténégro pour à l'échéance de la période de validité du visa, au cas où le visa me serait accordé. Je suis également informé(e) que le visa n'est qu'une condition préalable pour entrer en territoire du Monténégro. Toutes les conditions préalables seront vérifiées de nouveau à l'occasion de l'entrée en territoire national du Monténégro.</p>
-            </div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">40.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Adresa podnosioca zahtjeva</span> <span class="lbl-sub" contenteditable="true">/ Applicant's home address / Domicile d'origine du demandeur</span></div>
-            <div style="margin-top:3px;">${v(adresa)}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">41.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Broj telefona podnosioca zahtjeva</span> <span class="lbl-sub" contenteditable="true">/ Telephone number / Numéro de téléphone</span></div>
-            <div style="margin-top:3px;">${v(kontakt)}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num">42.</td>
-        <td>
-            <div class="lbl"><span contenteditable="true">Datum i mjesto</span> <span class="lbl-sub" contenteditable="true">/ Place and date / Lieu et date</span></div>
-            <div style="margin-top:3px;">${v(mjesto + ', ' + datum)}</div>
-        </td>
-    </tr>
-    <tr>
-        <td class="num" style="vertical-align:top;">43.</td>
-        <td>
-            <div class="lbl" contenteditable="true">Potpis podnosioca zahtjeva (za maloljetne zakonskog zastupnika)</div>
-            <div class="lbl-sub" contenteditable="true">Signature (for minors, signature of custodian/guardian) / Signature (pour les mineurs, signature de la personne qui en a la garde/ la tutelle)</div>
-            <div style="height:35px;"></div>
-        </td>
-    </tr>
-</table>
-</div>
-
-</div>
-
-<script>
-    function sacuvajVizu(radnikId) {
-        try {
-            const root = document.getElementById('vizaRoot');
-            const podaci = {};
-            root.querySelectorAll('[contenteditable="true"]').forEach((el, i) => {
-                podaci['f_' + i] = el.innerHTML;
-            });
-            root.querySelectorAll('.checkbox').forEach((el, i) => {
-                podaci['cb_' + i] = el.classList.contains('checked');
-            });
-            if (window.opener && window.opener.primiVizuIzmjene) {
-                window.opener.primiVizuIzmjene(radnikId, podaci);
-                document.getElementById('statusMsg').textContent = '✅ Sačuvano!';
-                document.getElementById('statusMsg').style.color = '#28a745';
-            } else {
-                localStorage.setItem('viza_izmjene_' + radnikId, JSON.stringify(podaci));
-                document.getElementById('statusMsg').textContent = '✅ Sačuvano lokalno!';
-                document.getElementById('statusMsg').style.color = '#28a745';
-            }
-        } catch(e) {
-            alert('Greška pri čuvanju: ' + e.message);
-        }
-    }
-</script>
-
-</body></html>`;
-}
-
-// Prima poruku iz viznog prozora
-function primiVizuIzmjene(radnikId, podaci) {
-    let sacuvano = false;
-    for (const o of data.objekti) {
-        if (!o.radnici) continue;
-        for (const r of o.radnici) {
-            if ((r.pasos || '') === radnikId) {
-                if (!r.dokumenti) r.dokumenti = {};
-                if (!r.dokumenti.viza) r.dokumenti.viza = {};
-                if (!r.dokumenti.viza.viza_obrazac) r.dokumenti.viza.viza_obrazac = {};
-                r.dokumenti.viza.viza_obrazac.custom = podaci;
-                sacuvano = true;
-                break;
-            }
-        }
-        if (sacuvano) break;
-    }
-    if (sacuvano) { saveToCloud(); toast('💾 Izmjene vize sačuvane'); }
+    var ime = r.ime || '', prezime = r.prezime || '', pasos = r.pasos || '';
+    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Viza - ' + ime + ' ' + prezime + '</title>';
+    html += '<style>body{font-family:Arial,sans-serif;padding:20px;} h1{text-align:center;} table{width:100%;border-collapse:collapse;margin-top:20px;} td{border:1px solid #000;padding:8px;} @media print{body{padding:0;}}</style>';
+    html += '</head><body>';
+    html += '<h1>ZAHTJEV ZA VIZU / VISA APPLICATION</h1>';
+    html += '<table>';
+    html += '<tr><td style="width:40%;"><strong>1. Prezime:</strong></td><td contenteditable="true">' + prezime + '</td></tr>';
+    html += '<tr><td><strong>2. Ime:</strong></td><td contenteditable="true">' + ime + '</td></tr>';
+    html += '<tr><td><strong>3. Ime oca i majke:</strong></td><td contenteditable="true">' + (r.roditelji || '') + '</td></tr>';
+    html += '<tr><td><strong>4. Datum rođenja:</strong></td><td contenteditable="true">' + (r.datum_rodenja || '') + '</td></tr>';
+    html += '<tr><td><strong>5. Mjesto rođenja:</strong></td><td contenteditable="true">' + (r.mjesto_rodenja || '') + '</td></tr>';
+    html += '<tr><td><strong>6. Državljanstvo:</strong></td><td contenteditable="true">' + (r.drzavljanstvo || '') + '</td></tr>';
+    html += '<tr><td><strong>7. Državljanstvo pri rođenju:</strong></td><td contenteditable="true">' + (r.drzavljanstvo || '') + '</td></tr>';
+    html += '<tr><td><strong>8. Pol:</strong></td><td contenteditable="true">' + (r.pol === 'M' ? 'Muški / Male' : 'Ženski / Female') + '</td></tr>';
+    html += '<tr><td><strong>9. Bračno stanje:</strong></td><td contenteditable="true">' + (r.bracno || '') + '</td></tr>';
+    html += '<tr><td><strong>10. Vrsta putne isprave:</strong></td><td contenteditable="true">Običan pasoš / National passport</td></tr>';
+    html += '<tr><td><strong>11. Broj putne isprave:</strong></td><td contenteditable="true">' + pasos + '</td></tr>';
+    html += '<tr><td><strong>12. Izdata od:</strong></td><td contenteditable="true">' + (r.mjesto_izdavanja || '') + '</td></tr>';
+    html += '<tr><td><strong>13. Datum izdavanja:</strong></td><td contenteditable="true">' + (r.datum_izdavanja || '') + '</td></tr>';
+    html += '<tr><td><strong>14. Rok važenja:</strong></td><td contenteditable="true">' + (r.datum_vazenja || '') + '</td></tr>';
+    html += '<tr><td><strong>15. Broj lične karte:</strong></td><td contenteditable="true"></td></tr>';
+    html += '<tr><td><strong>17. Zanimanje:</strong></td><td contenteditable="true">' + (r.zanimanje || '') + '</td></tr>';
+    html += '<tr><td><strong>18. Poslodavac:</strong></td><td contenteditable="true">' + (o.naziv || '') + ' — ' + (o.adresa || '') + '</td></tr>';
+    html += '<tr><td><strong>19. Država odredišta:</strong></td><td contenteditable="true">Crna Gora / Montenegro</td></tr>';
+    html += '<tr><td><strong>22. Vrsta vize:</strong></td><td contenteditable="true">Viza na duži boravak (D)</td></tr>';
+    html += '<tr><td><strong>23. Broj ulazaka:</strong></td><td contenteditable="true">Jedan / One</td></tr>';
+    html += '<tr><td><strong>25. Svrha putovanja:</strong></td><td contenteditable="true">Zasnivanje radnog odnosa</td></tr>';
+    html += '<tr><td><strong>26. Fizičko ili pravno lice koje posjećujete:</strong></td><td contenteditable="true">' + (o.naziv || '') + ', ' + (o.adresa || '') + ', Tel: ' + (o.telefon || '') + '</td></tr>';
+    html += '<tr><td><strong>27. Adresa boravka u CG:</strong></td><td contenteditable="true">' + (o.adresa || '') + '</td></tr>';
+    html += '<tr><td><strong>28. Ko snosi troškove:</strong></td><td contenteditable="true">Pravno lice: ' + (o.naziv || '') + '</td></tr>';
+    html += '<tr><td><strong>29. Novčana sredstva:</strong></td><td contenteditable="true">Smještaj / Accommodation, Putno ili zdravstveno osiguranje</td></tr>';
+    html += '<tr><td><strong>30. Datum dolaska:</strong></td><td contenteditable="true">' + (r.ugovor_od || '') + '</td></tr>';
+    html += '<tr><td><strong>31. Datum odlaska:</strong></td><td contenteditable="true">' + (r.ugovor_do || '') + '</td></tr>';
+    html += '<tr><td><strong>32. Način putovanja:</strong></td><td contenteditable="true">Avionom / Airplane</td></tr>';
+    html += '<tr><td><strong>40. Adresa podnosioca:</strong></td><td contenteditable="true">' + (r.adresa || '') + '</td></tr>';
+    html += '<tr><td><strong>41. Telefon:</strong></td><td contenteditable="true">' + (r.kontakt_osoba || o.kontakt || o.telefon || '') + '</td></tr>';
+    html += '<tr><td><strong>42. Datum i mjesto:</strong></td><td contenteditable="true">' + mjesto + ', ' + datum + '</td></tr>';
+    html += '<tr><td><strong>43. Potpis:</strong></td><td contenteditable="true" style="height:40px;"></td></tr>';
+    html += '</table>';
+    html += '<p style="margin-top:20px;text-align:center;"><button onclick="window.print()" style="padding:10px 20px;background:#17a2b8;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:14px;">🖨️ Štampaj / PDF</button></p>';
+    html += '</body></html>';
+    return html;
 }
 
 // ==================== UTILS ====================
-function showModal(id) { document.getElementById(id).classList.add('active'); }
-function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-function toast(msg, error = false) {
-    const t = document.getElementById('toast');
+function showModal(id) { var m = document.getElementById(id); if (m) m.classList.add('active'); }
+function closeModal(id) { var m = document.getElementById(id); if (m) m.classList.remove('active'); }
+function toast(msg, error) {
+    var t = document.getElementById('toast');
+    if (!t) return;
     t.textContent = msg;
     t.className = 'toast' + (error ? ' error' : '');
     t.style.display = 'block';
-    setTimeout(() => t.style.display = 'none', 3000);
+    setTimeout(function(){ t.style.display = 'none'; }, 3000);
 }
-
 window.onclick = function(e) {
-    if (e.target.classList.contains('modal')) e.target.classList.remove('active');
+    if (e.target.classList && e.target.classList.contains('modal')) e.target.classList.remove('active');
 };
+
+// ==================== AUTO-LOAD ====================
+loadLocal();
+console.log('✅ Aplikacija učitana. Klikni Uđi.');
 </script>
 </body>
 </html>
