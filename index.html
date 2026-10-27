@@ -575,12 +575,94 @@ async function generisiOdabrane(idx) {
     if (!r.dokumenti[aktivniFolder]) r.dokumenti[aktivniFolder] = {};
     odabrani.forEach(tip => { r.dokumenti[aktivniFolder][tip] = { datum, mjesto, kreirano: new Date().toISOString() }; });
     await saveToCloud();
-    odabrani.forEach(tip => {
-        const html = generisiHTMLDokumenta(o, r, tip, datum, mjesto);
-        const win = window.open('', '_blank');
-        win.document.write(html); win.document.close();
-    });
+    
+    for (const tip of odabrani) {
+        if (tip === 'viza_obrazac') {
+            await generisiVizaPDF(o, r, datum, mjesto);
+        } else {
+            const html = generisiHTMLDokumenta(o, r, tip, datum, mjesto);
+            const win = window.open('', '_blank');
+            win.document.write(html); win.document.close();
+        }
+    }
+    
     closeModal('generisiModal'); renderMain(); toast(`📄 Generisano ${odabrani.length} dokumenata`);
+}
+
+// ==================== PDF POPUNJAVANJE (VIZA) ====================
+async function generisiVizaPDF(o, r, datum, mjesto) {
+    try {
+        if (typeof PDFLib === 'undefined') {
+            await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js';
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+
+        const url = 'viza.pdf';
+        const existingPdfBytes = await fetch(url).then(res => {
+            if(!res.ok) throw new Error('Ne mogu da nađem viza.pdf. Provjeri da li je na GitHub-u.');
+            return res.arrayBuffer();
+        });
+
+        const pdfDoc = await PDFLib.PDFDocument.load(existingPdfBytes);
+        const pages = pdfDoc.getPages();
+        const font = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+
+        function dodajTekst(strana, tekst, x, y, velicina = 9) {
+            if (!tekst) return;
+            strana.drawText(String(tekst), {
+                x: x,
+                y: y,
+                size: velicina,
+                font: font,
+                color: PDFLib.rgb(0, 0, 0)
+            });
+        }
+
+        const ime = r.ime || '';
+        const prezime = r.prezime || '';
+        const pasos = r.pasos || '';
+
+        if (pages[0]) {
+            const p1 = pages[0];
+            dodajTekst(p1, prezime, 100, 700); 
+            dodajTekst(p1, ime, 100, 670); 
+            dodajTekst(p1, r.roditelji || '', 100, 640); 
+            dodajTekst(p1, r.datum_rodenja || '', 100, 610); 
+            dodajTekst(p1, r.mjesto_rodenja || '', 100, 580); 
+            dodajTekst(p1, r.drzavljanstvo || '', 100, 550); 
+            dodajTekst(p1, pasos, 100, 460); 
+            dodajTekst(p1, r.mjesto_izdavanja || '', 100, 430); 
+            dodajTekst(p1, r.datum_izdavanja || '', 100, 400); 
+            dodajTekst(p1, r.datum_vazenja || '', 100, 370); 
+        }
+
+        if (pages[1]) {
+            const p2 = pages[1];
+            dodajTekst(p2, r.zanimanje || '', 100, 780); 
+            dodajTekst(p2, (o.naziv || '') + ', ' + (o.adresa || ''), 100, 740); 
+        }
+
+        const pdfBytes = await pdfDoc.save();
+        
+        const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `Viza_${prezime}_${ime}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        toast('✅ Viza je uspješno popunjena i preuzeta!');
+
+    } catch (error) {
+        console.error(error);
+        alert('Greška: ' + error.message);
+    }
 }
 
 // ==================== HTML GENERATOR (AMBASADA & INSPEKTOR) ====================
@@ -715,78 +797,6 @@ function generisiHTMLDokumenta(o, r, tip, datum, mjesto) {
         body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; color: #000; padding: 20px; }
         p { margin-bottom: 10px; }
     </style></head><body>${memorandum}${sadrzaj}</body></html>`;
-}
-
-// ==================== VIZA (3 STRANICE, EDITABILNO) ====================
-function generisiVizaObrazac(o, r, datum, mjesto) {
-    const ime = r.ime || '', prezime = r.prezime || '', pasos = r.pasos || '';
-    const title = 'Zahtjev za vizu - ' + ime + ' ' + prezime;
-    let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + title + '</title><style>@page{size:A4;margin:8mm;}*{box-sizing:border-box;}body{font-family:Arial,sans-serif;font-size:8pt;margin:0;background:#888;}.toolbar{position:fixed;top:0;left:0;right:0;background:#222;color:#fff;padding:8px 15px;display:flex;gap:8px;align-items:center;z-index:9999;font-size:13px;}.toolbar button{padding:7px 14px;border:none;border-radius:4px;cursor:pointer;font-weight:bold;font-size:13px;}.toolbar .btn-print{background:#17a2b8;color:#fff;}.toolbar .btn-close{background:#dc3545;color:#fff;}.pages{padding-top:55px;}.page{width:194mm;min-height:281mm;background:#fff;margin:10px auto;padding:5mm;page-break-after:always;box-shadow:0 2px 8px rgba(0,0,0,0.3);}.page:last-child{page-break-after:auto;}table{width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:3mm;}td,th{border:0.6pt solid #000;padding:2px 3px;vertical-align:top;}.lbl{font-size:6.3pt;font-weight:bold;line-height:1.15;}.lbl-sub{font-size:5.8pt;font-style:italic;color:#222;}.num{font-size:7pt;font-weight:bold;text-align:center;width:6mm;}.val{display:inline-block;min-width:30px;min-height:11px;font-size:8.5pt;font-weight:bold;border-bottom:0.5pt dotted #ccc;padding:0 2px;}.val:focus{background:#fffbe6;}.val-empty{display:block;min-height:14px;width:100%;font-size:8.5pt;font-weight:bold;padding:1px 2px;}.cb-wrap{display:inline-flex;align-items:center;gap:3px;font-size:6.5pt;margin-right:8px;cursor:pointer;}.checkbox{display:inline-block;width:7px;height:7px;border:0.8pt solid #000;background:#fff;position:relative;flex-shrink:0;cursor:pointer;}.checkbox.checked{background:#000;}.checkbox.checked::after{content:"✓";color:#fff;font-size:7pt;font-weight:bold;position:absolute;top:-2px;left:0.3px;line-height:1;}.header-title{text-align:center;font-weight:bold;}.title-main{font-size:11pt;}.title-sub{font-size:8pt;font-style:italic;}.photo-cell{width:40mm;text-align:center;padding:4px;}.photo-box{width:35mm;height:45mm;border:0.8pt solid #000;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:7pt;color:#555;text-align:center;}.section-title{font-size:6.5pt;font-weight:bold;text-align:center;background:#f0f0f0;padding:2px;}.right-side{width:42mm;vertical-align:top;padding:3px;}.right-side .section-title{font-size:6pt;}.napomene-line{border-bottom:0.5pt dotted #666;height:10px;margin:1px 0;}.statement-box{font-size:5.6pt;line-height:1.25;padding:4px;text-align:justify;}.statement-box p{margin:0 0 3px 0;}@media print{body{background:#fff;}.toolbar{display:none!important;}.pages{padding-top:0;}.page{margin:0;box-shadow:none;}.val{border-bottom:none;}}</style></head><body>';
-    html += '<div class="toolbar"><strong>📄 Zahtjev za vizu</strong><span style="color:#aaa;font-size:11px;">' + ime + ' ' + prezime + ' — ' + pasos + '</span><button class="btn-print" onclick="window.print()">🖨️ Štampaj / PDF</button><button class="btn-close" onclick="window.close()">✖ Zatvori</button></div>';
-    html += '<div class="pages">';
-
-    function cb(checked, label) { return '<label class="cb-wrap"><span class="checkbox' + (checked ? ' checked' : '') + '" onclick="this.classList.toggle(\'checked\')"></span>' + label + '</label>'; }
-    function v(val) { return '<span class="val" contenteditable="true">' + (val || '') + '</span>'; }
-
-    // STRANICA 1
-    html += '<div class="page"><table><tr><td rowspan="3" class="photo-cell"><div class="photo-box">fotografija<br>photo<br>35 x 45 mm</div></td><td colspan="2" class="header-title" style="padding:6px;"><div class="title-main" contenteditable="true">ZAHTJEV ZA VIZU</div><div class="title-sub" contenteditable="true">VISA APPLICATION</div><div class="title-sub" contenteditable="true" style="font-size:7pt;">DEMANDE DU VISA</div></td></tr><tr><td colspan="2" class="section-title">' + cb(false,'') + ' <span contenteditable="true">IZDAVANJE / ISSUANCE / DÉLIVRANCE</span></td></tr><tr><td colspan="2" class="section-title">' + cb(false,'') + ' <span contenteditable="true">PRODUŽENJE / EXTENSION / PROROGATION</span></td></tr></table>';
-    html += '<table><tr><td colspan="2" style="text-align:right;font-size:6pt;font-style:italic;padding:3px;" contenteditable="true">prijemni štambil / stamp of receipt / cachet de reception</td></tr></table>';
-    html += '<table>';
-    var p1 = [
-        ['1.', 'Prezime (bivše odnosno rođeno prezime)', 'Surname / Nom', prezime],
-        ['2.', 'Ime', 'Given name(s) / Prénom(s)', ime],
-        ['3.', 'Ime oca i majke', 'Parents names / Prénom(s) du père et de la mère', r.roditelji || ''],
-        ['4.', 'Datum rođenja', 'Date of birth / Date de naissance', r.datum_rodenja || ''],
-        ['5.', 'Mjesto i država rođenja', 'Place and country of birth / Lieu et pays de naissance', r.mjesto_rodenja || ''],
-        ['6.', 'Sadašnje državljanstvo', 'Current nationality / Nationalité actuelle', r.drzavljanstvo || ''],
-        ['7.', 'Državljanstvo pri rođenju', 'Original nationality / Nationalité d\'origine', r.drzavljanstvo || '']
-    ];
-    p1.forEach(function(row) { html += '<tr><td class="num">' + row[0] + '</td><td><div class="lbl" contenteditable="true">' + row[1] + '</div><div class="lbl-sub" contenteditable="true">' + row[2] + '</div><div style="margin-top:3px;">' + v(row[3]) + '</div></td></tr>'; });
-    html += '<tr><td class="num">8.</td><td><div class="lbl" contenteditable="true">Pol / Sex / Sexe</div><div style="margin-top:4px;">' + cb(r.pol==='M', '<span contenteditable="true">Muški / Male</span>') + ' &nbsp; ' + cb(r.pol==='Ž', '<span contenteditable="true">Ženski / Female</span>') + '</div></td></tr>';
-    html += '<tr><td class="num">9.</td><td><div class="lbl" contenteditable="true">Bračno stanje / Marital status</div><div style="margin-top:4px;">' + cb(r.bracno==='Single', '<span contenteditable="true">Neoženjen/neudata / Single</span>') + cb(r.bracno==='Married', '<span contenteditable="true">Oženjen/udata / Married</span>') + '</div><div style="margin-top:2px;">' + cb(r.bracno==='Divorced', '<span contenteditable="true">Razveden(a) / Divorced</span>') + cb(r.bracno==='Widow', '<span contenteditable="true">Udovac(a) / Widow(er)</span>') + '</div></td></tr>';
-    html += '<tr><td class="num">10.</td><td><div class="lbl" contenteditable="true">Vrsta putne isprave / Type of passport</div><div style="margin-top:4px;">' + cb(true, '<span contenteditable="true">Običan pasoš / National passport</span>') + cb(false, '<span contenteditable="true">Diplomatski pasoš / Diplomatic</span>') + '</div><div>' + cb(false, '<span contenteditable="true">Službeni pasoš / Service</span>') + cb(false, '<span contenteditable="true">Druga putna isprava / Other</span>') + '</div></td></tr>';
-    html += '<tr><td class="num">11.</td><td><div class="lbl"><span contenteditable="true">Broj putne isprave</span> <span class="lbl-sub">/ Number of passport</span></div><div style="margin-top:3px;">' + v(pasos) + '</div></td></tr>';
-    html += '<tr><td class="num">12.</td><td><div class="lbl"><span contenteditable="true">Izdata od</span> <span class="lbl-sub">/ Issued by</span></div><div style="margin-top:3px;">' + v(r.mjesto_izdavanja || '') + '</div></td></tr>';
-    html += '<tr><td class="num">13.</td><td><div class="lbl"><span contenteditable="true">Datum izdavanja</span> <span class="lbl-sub">/ Date of issue</span></div><div style="margin-top:3px;">' + v(r.datum_izdavanja || '') + '</div></td></tr>';
-    html += '<tr><td class="num">14.</td><td><div class="lbl"><span contenteditable="true">Rok važenja</span> <span class="lbl-sub">/ Valid until</span></div><div style="margin-top:3px;">' + v(r.datum_vazenja || '') + '</div></td></tr>';
-    html += '<tr><td class="num">15.</td><td><div class="lbl"><span contenteditable="true">Broj lične karte (nije obavezno)</span> <span class="lbl-sub">/ ID-number (optional)</span></div><div style="margin-top:3px;">' + v('') + '</div></td></tr>';
-    html += '<tr><td class="num">16.</td><td><div class="lbl" contenteditable="true">Ako boravite u zemlji koja nije vaša zemlja porijekla, imate li dozvolu za povratak?</div><div class="lbl-sub" contenteditable="true">If you reside in a country other than your country of origin, have you permission to return?</div><div style="margin-top:4px;">' + cb(false, '<span contenteditable="true">NE / NO</span>') + cb(false, '<span contenteditable="true">DA / YES</span>') + '</div></td></tr>';
-    html += '</table></div>';
-
-    // STRANICA 2
-    html += '<div class="page"><table>';
-    html += '<tr><td class="num">17.</td><td><div class="lbl" contenteditable="true">Zanimanje / Current occupation</div><div style="margin-top:3px;">' + v(r.zanimanje || '') + '</div></td><td class="right-side" rowspan="16"><div class="section-title" contenteditable="true">Vrsta vize / Type of visa</div><div style="margin-top:3px;">' + cb(false,'A') + cb(false,'B') + cb(false,'C') + cb(true,'D') + '</div><div class="section-title" style="margin-top:6px;" contenteditable="true">Broj ulazaka / Entries</div><div>' + cb(true,'1') + cb(false,'2') + cb(false,'N') + '</div><div class="section-title" style="margin-top:6px;" contenteditable="true">Rok važenja / Validity</div><div style="font-size:6pt;" contenteditable="true">od / from:</div><div class="napomene-line"></div><div style="font-size:6pt;" contenteditable="true">do / to:</div><div class="napomene-line"></div><div class="section-title" style="margin-top:6px;" contenteditable="true">Napomene / Remarks</div><div class="napomene-line"></div><div class="napomene-line"></div><div class="napomene-line"></div><div class="napomene-line"></div><div class="napomene-line"></div></td></tr>';
-    html += '<tr><td class="num">18.</td><td><div class="lbl" contenteditable="true">Poslodavac (naziv, adresa, telefon)</div><div class="lbl-sub" contenteditable="true">Employer</div><div style="margin-top:3px;">' + v((o.naziv||'') + ' — ' + (o.adresa||'') + (o.telefon ? ' — ' + o.telefon : '')) + '</div></td></tr>';
-    html += '<tr><td class="num">19.</td><td><div class="lbl"><span contenteditable="true">Država odredišta</span> <span class="lbl-sub">/ Main destination</span></div><div style="margin-top:3px;">' + v('Crna Gora / Montenegro') + '</div></td></tr>';
-    html += '<tr><td class="num">20.</td><td><div class="lbl" contenteditable="true">Druge vize izdate u posljednje tri godine</div><div class="lbl-sub" contenteditable="true">Other visas (past three years)</div><div class="val-empty" contenteditable="true"></div></td></tr>';
-    html += '<tr><td class="num">21.</td><td><div class="lbl" contenteditable="true">U slučaju tranzita, imate li dozvolu ulaska u treću zemlju?</div><div class="lbl-sub" contenteditable="true">In case of transit, have you entry permit for final destination?</div></td></tr>';
-    html += '<tr><td class="num">22.</td><td><div class="lbl" contenteditable="true">Vrsta vize / Type of visa</div><div style="margin-top:4px;">' + cb(false, '<span contenteditable="true">Aerodromsko-tranzitna (A)</span>') + cb(false, '<span contenteditable="true">Tranzitna (B)</span>') + '</div><div>' + cb(false, '<span contenteditable="true">Putna (C)</span>') + cb(true, '<span contenteditable="true">Viza na duži boravak (D)</span>') + '</div><div>' + cb(true, '<span contenteditable="true">Individualna</span>') + cb(false, '<span contenteditable="true">Kolektivna</span>') + '</div></td></tr>';
-    html += '<tr><td class="num">23.</td><td><div class="lbl" contenteditable="true">Broj ulazaka / Number of entries</div><div style="margin-top:4px;">' + cb(true, '<span contenteditable="true">Jedan / One</span>') + cb(false, '<span contenteditable="true">Dva / Two</span>') + cb(false, '<span contenteditable="true">Više / Multiple</span>') + '</div></td></tr>';
-    html += '<tr><td class="num">24.</td><td><div class="lbl"><span contenteditable="true">Trajanje boravka</span> <span class="lbl-sub">/ Duration of stay</span></div><div style="margin-top:3px;text-align:center;"><span contenteditable="true">______</span> <span class="lbl-sub" contenteditable="true">dana / days</span></div></td></tr>';
-    html += '<tr><td class="num">25.</td><td><div class="lbl" contenteditable="true">Svrha putovanja / Purpose of travel</div><div style="margin-top:4px;">' + cb(false, '<span contenteditable="true">Službeno / Official</span>') + cb(false, '<span contenteditable="true">Turizam / Tourism</span>') + '</div><div>' + cb(false, '<span contenteditable="true">Kultura/sport</span>') + cb(false, '<span contenteditable="true">Poslovno / Business</span>') + '</div><div>' + cb(false, '<span contenteditable="true">Privatna posjeta / Visit</span>') + '</div><div>' + cb(false, '<span contenteditable="true">Zdravstveni razlozi</span>') + cb(true, '<span contenteditable="true">Ostalo / Other</span>') + '</div><div class="val-empty" contenteditable="true">Zasnivanje radnog odnosa</div></td></tr>';
-    html += '<tr><td class="num">26.</td><td><div class="lbl" contenteditable="true">Fizičko ili pravno lice koje posjećujete</div><div class="lbl-sub" contenteditable="true">Person you are visiting</div><div style="margin-top:3px;">' + v((o.naziv||'') + ', ' + (o.adresa||'') + (o.telefon ? ', Tel: ' + o.telefon : '')) + '</div></td></tr>';
-    html += '<tr><td class="num">27.</td><td><div class="lbl"><span contenteditable="true">Adresa boravka u Crnoj Gori</span> <span class="lbl-sub">/ Address in Montenegro</span></div><div style="margin-top:3px;">' + v(o.adresa || '') + '</div></td></tr>';
-    html += '<tr><td class="num">28.</td><td><div class="lbl" contenteditable="true">Ko snosi troškove putovanja i boravka?</div><div class="lbl-sub" contenteditable="true">Who pays costs?</div><div style="margin-top:4px;">' + cb(false, '<span contenteditable="true">Lično / Myself</span>') + cb(false, '<span contenteditable="true">Fizičko lice / Host</span>') + cb(true, '<span contenteditable="true">Pravno lice / Host company</span>') + '</div><div class="val-empty" contenteditable="true">' + (o.naziv || '') + '</div></td></tr>';
-    html += '<tr><td class="num">29.</td><td><div class="lbl" contenteditable="true">Novčana sredstva za izdržavanje</div><div class="lbl-sub" contenteditable="true">Means of support</div><div style="margin-top:4px;">' + cb(false, '<span contenteditable="true">Gotovina / Cash</span>') + cb(false, '<span contenteditable="true">Putnički čekovi</span>') + '</div><div>' + cb(false, '<span contenteditable="true">Kreditne kartice</span>') + cb(true, '<span contenteditable="true">Smještaj / Accommodation</span>') + '</div><div>' + cb(false, '<span contenteditable="true">Drugo / Other</span>') + cb(true, '<span contenteditable="true">Putno ili zdravstveno osiguranje</span>') + '</div><div class="val-empty" contenteditable="true"></div></td></tr>';
-    html += '<tr><td class="num">30.</td><td><div class="lbl"><span contenteditable="true">Datum dolaska</span> <span class="lbl-sub">/ Date of arrival</span></div><div style="margin-top:3px;">' + v(r.ugovor_od || '') + '</div></td></tr>';
-    html += '<tr><td class="num">31.</td><td><div class="lbl"><span contenteditable="true">Datum odlaska</span> <span class="lbl-sub">/ Date of departure</span></div><div style="margin-top:3px;">' + v(r.ugovor_do || '') + '</div></td></tr>';
-    html += '<tr><td class="num">32.</td><td><div class="lbl"><span contenteditable="true">Način putovanja</span> <span class="lbl-sub">/ Means of transport</span></div><div style="margin-top:3px;">' + v('Avionom / Airplane') + '</div></td></tr>';
-    html += '</table></div>';
-
-    // STRANICA 3
-    html += '<div class="page"><table>';
-    var p3 = [['33.', 'Ime bračnog druga', 'Spouse first name'],['34.', 'Prezime bračnog druga', 'Spouse family name'],['35.', 'Prezime pri rođenju', 'Spouse name at birth'],['36.', 'Datum rođenja bračnog druga', 'Spouse date of birth'],['37.', 'Mjesto rođenja bračnog druga', 'Spouse place of birth']];
-    p3.forEach(function(row) { html += '<tr><td class="num">' + row[0] + '</td><td><div class="lbl"><span contenteditable="true">' + row[1] + '</span> <span class="lbl-sub" contenteditable="true">/ ' + row[2] + '</span></div><div class="val-empty" contenteditable="true"></div></td></tr>'; });
-    html += '<tr><td class="num">38.</td><td><div class="lbl" contenteditable="true">Djeca / Children — Ime i prezime — Datum rođenja</div><table style="margin-top:4px;"><tr><td class="num">1.</td><td class="val-empty" contenteditable="true"></td><td class="val-empty" contenteditable="true" style="width:35%;"></td></tr><tr><td class="num">2.</td><td class="val-empty" contenteditable="true"></td><td class="val-empty" contenteditable="true" style="width:35%;"></td></tr><tr><td class="num">3.</td><td class="val-empty" contenteditable="true"></td><td class="val-empty" contenteditable="true" style="width:35%;"></td></tr></table></td></tr>';
-    html += '<tr><td class="num">39.</td><td><div class="statement-box" contenteditable="true"><p><strong>Pri punoj svijesti izjavljujem:</strong> svi lični podaci na ovom obrascu proslijediće se nadležnim organima Crne Gore. Izjavljujem da su svi podaci istiniti i tačni. Svjestan sam da lažna izjava ima za posljedicu odbijanje zahtjeva ili poništenje vize. Obavezujem se da ću napustiti teritoriju Crne Gore po isteku roka važenja vize.</p><p><strong>I declare</strong> that all information provided is correct and complete. I am aware that any false statement will lead to rejection. I undertake to leave the territory of Montenegro upon expiry of the visa.</p><p><strong>Je déclare</strong> que toutes les indications fournies sont correctes et complètes. Toute fausse déclaration entraînera le rejet de ma demande.</p></div></td></tr>';
-    html += '<tr><td class="num">40.</td><td><div class="lbl"><span contenteditable="true">Adresa podnosioca zahtjeva</span> <span class="lbl-sub">/ Applicant home address</span></div><div style="margin-top:3px;">' + v(r.adresa || '') + '</div></td></tr>';
-    html += '<tr><td class="num">41.</td><td><div class="lbl"><span contenteditable="true">Broj telefona</span> <span class="lbl-sub">/ Telephone number</span></div><div style="margin-top:3px;">' + v(r.kontakt_osoba || o.kontakt || o.telefon || '') + '</div></td></tr>';
-    html += '<tr><td class="num">42.</td><td><div class="lbl"><span contenteditable="true">Datum i mjesto</span> <span class="lbl-sub">/ Place and date</span></div><div style="margin-top:3px;">' + v(mjesto + ', ' + datum) + '</div></td></tr>';
-    html += '<tr><td class="num">43.</td><td><div class="lbl" contenteditable="true">Potpis podnosioca zahtjeva / Signature</div><div style="height:35px;"></div></td></tr>';
-    html += '</table></div>';
-
-    html += '</div></body></html>';
-    return html;
 }
 
 // ==================== UTILS ====================
