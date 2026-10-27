@@ -89,18 +89,18 @@
     <div class="modal-content">
         <div class="modal-header"><h2 id="objektTitle">Novi objekat</h2><button onclick="closeModal('objektModal')" style="font-size:28px;background:none;border:none;cursor:pointer;">&times;</button></div>
         <div class="grid-2">
-            <div class="form-group"><label>Naziv firme:</label><input type="text" id="objNaziv"></div>
-            <div class="form-group"><label>PIB:</label><input type="text" id="objPIB"></div>
-            <div class="form-group"><label>PDV:</label><input type="text" id="objPDV"></div>
-            <div class="form-group"><label>Adresa:</label><input type="text" id="objAdresa"></div>
-            <div class="form-group"><label>Telefon:</label><input type="text" id="objTelefon"></div>
-            <div class="form-group"><label>Email:</label><input type="text" id="objEmail"></div>
-            <div class="form-group"><label>Direktor:</label><input type="text" id="objDirektor"></div>
-            <div class="form-group"><label>JMBG direktora:</label><input type="text" id="objJMBG"></div>
-            <div class="form-group"><label>Mjesto izdavanja:</label><input type="text" id="objMjesto"></div>
-            <div class="form-group"><label>Kontakt telefon:</label><input type="text" id="objKontakt"></div>
+            <div class="form-group"><label>Naziv firme:</label><input type="text" id="objNaziv" placeholder="CENTRO D.O.O"></div>
+            <div class="form-group"><label>PIB:</label><input type="text" id="objPIB" placeholder="02458195"></div>
+            <div class="form-group"><label>PDV:</label><input type="text" id="objPDV" placeholder="81/31-01282-8"></div>
+            <div class="form-group"><label>Adresa:</label><input type="text" id="objAdresa" placeholder="Mediteranska - Tq Plaza br:53, Budva"></div>
+            <div class="form-group"><label>Telefon:</label><input type="text" id="objTelefon" placeholder="069 122 000"></div>
+            <div class="form-group"><label>Email:</label><input type="text" id="objEmail" placeholder="info@firma.me"></div>
+            <div class="form-group"><label>Direktor:</label><input type="text" id="objDirektor" placeholder="Ratko Kovijanić"></div>
+            <div class="form-group"><label>JMBG direktora:</label><input type="text" id="objJMBG" placeholder="3101990280012"></div>
+            <div class="form-group"><label>Mjesto izdavanja:</label><input type="text" id="objMjesto" placeholder="Budva"></div>
+            <div class="form-group"><label>Kontakt telefon:</label><input type="text" id="objKontakt" placeholder="+38269017788"></div>
         </div>
-        <div class="form-group"><label>Logo:</label><input type="file" id="objLogo" accept="image/*" onchange="ucitajLogo(event)"><div id="objLogoPreview" style="margin-top:8px;"></div></div>
+        <div class="form-group"><label>Logo firme:</label><input type="file" id="objLogo" accept="image/*" onchange="ucitajLogo(event)"><div id="objLogoPreview" style="margin-top:8px;"></div></div>
         <div class="form-group"><label>Tekst o firmi:</label><textarea id="objInfo"></textarea></div>
         <button onclick="sacuvajObjekt()" class="btn btn-success" style="width:100%;padding:12px;">💾 Sačuvaj</button>
     </div>
@@ -108,17 +108,17 @@
 
 <div id="uvozModal" class="modal">
     <div class="modal-content">
-        <div class="modal-header"><h2>📥 Uvoz radnika</h2><button onclick="closeModal('uvozModal')" style="font-size:28px;background:none;border:none;cursor:pointer;">&times;</button></div>
-        <div class="info-box info-info">💡 Zalijepi tekst iz Excela (Ctrl+V)</div>
-        <div class="form-group"><textarea id="uvozTekst" style="min-height:200px;"></textarea></div>
-        <button onclick="parsirajUvoz()" class="btn btn-primary" style="width:100%;padding:12px;">🔍 Prepoznaj</button>
+        <div class="modal-header"><h2>📥 Uvoz radnika iz Excela</h2><button onclick="closeModal('uvozModal')" style="font-size:28px;background:none;border:none;cursor:pointer;">&times;</button></div>
+        <div class="info-box info-info">💡 Označi redove u Excelu (Ctrl+C), pa zalijepi ovdje (Ctrl+V).</div>
+        <div class="form-group"><textarea id="uvozTekst" style="min-height:200px;" placeholder="Primjer:&#10;Name&#9;khaled Ahmed Mmansour Ahmed&#9;&#9;&#9;COOK&#10;Surname&#9;Ahmed"></textarea></div>
+        <button onclick="parsirajUvoz()" class="btn btn-primary" style="width:100%;padding:12px;">🔍 Prepoznaj radnike</button>
         <div id="uvozPreview" style="margin-top:15px;"></div>
     </div>
 </div>
 
 <div id="generisiModal" class="modal">
     <div class="modal-content">
-        <div class="modal-header"><h2>📄 Generisanje</h2><button onclick="closeModal('generisiModal')" style="font-size:28px;background:none;border:none;cursor:pointer;">&times;</button></div>
+        <div class="modal-header"><h2>📄 Generisanje dokumenata</h2><button onclick="closeModal('generisiModal')" style="font-size:28px;background:none;border:none;cursor:pointer;">&times;</button></div>
         <div id="generisiContent"></div>
     </div>
 </div>
@@ -129,23 +129,28 @@
         <div class="grid-2">
             <div class="form-group"><label>Ime:</label><input type="text" id="radIme"></div>
             <div class="form-group"><label>Prezime:</label><input type="text" id="radPrezime"></div>
-            <div class="form-group"><label>Datum rođenja:</label><input type="text" id="radDatumRodjenja"></div>
+            <div class="form-group"><label>Datum rođenja:</label><input type="text" id="radDatumRodjenja" placeholder="12.01.1980"></div>
             <div class="form-group"><label>Mjesto rođenja:</label><input type="text" id="radMjestoRodjenja"></div>
-            <div class="form-group"><label>Državljanstvo:</label><input type="text" id="radDrzavljanstvo"></div>
+            <div class="form-group"><label>Državljanstvo:</label><input type="text" id="radDrzavljanstvo" placeholder="Egypt"></div>
             <div class="form-group"><label>Broj pasoša:</label><input type="text" id="radPasos"></div>
             <div class="form-group"><label>Mjesto izdavanja pasoša:</label><input type="text" id="radMjestoIzdavanja"></div>
-            <div class="form-group"><label>Datum izdavanja:</label><input type="text" id="radDatumIzdavanja"></div>
-            <div class="form-group"><label>Datum važenja:</label><input type="text" id="radDatumVazenja"></div>
+            <div class="form-group"><label>Datum izdavanja pasoša:</label><input type="text" id="radDatumIzdavanja" placeholder="17.01.2024"></div>
+            <div class="form-group"><label>Datum važenja pasoša:</label><input type="text" id="radDatumVazenja" placeholder="16.01.2031"></div>
             <div class="form-group"><label>Adresa:</label><input type="text" id="radAdresa"></div>
-            <div class="form-group"><label>Zanimanje:</label><input type="text" id="radZanimanje"></div>
-            <div class="form-group"><label>Kontakt osoba:</label><input type="text" id="radKontakt"></div>
-            <div class="form-group"><label>Radno mjesto:</label><input type="text" id="radRadnoMjesto"></div>
-            <div class="form-group"><label>Ugovor od:</label><input type="text" id="radUgovorOd"></div>
-            <div class="form-group"><label>Ugovor do:</label><input type="text" id="radUgovorDo"></div>
-            <div class="form-group"><label>Plata (€):</label><input type="text" id="radPlata"></div>
+            <div class="form-group"><label>Zanimanje:</label><input type="text" id="radZanimanje" placeholder="COOK"></div>
+            <div class="form-group"><label>Kontakt osoba u CG:</label><input type="text" id="radKontakt"></div>
+            <div class="form-group"><label>Radno mjesto:</label><input type="text" id="radRadnoMjesto" placeholder="Sunset Hotel Bar City"></div>
+            <div class="form-group"><label>Trajanje ugovora (od):</label><input type="text" id="radUgovorOd" placeholder="01.02.2026"></div>
+            <div class="form-group"><label>Trajanje ugovora (do):</label><input type="text" id="radUgovorDo" placeholder="01.02.2027"></div>
+            <div class="form-group"><label>Mjesečna plata (€):</label><input type="text" id="radPlata" placeholder="800"></div>
             <div class="form-group"><label>Ime oca i majke:</label><input type="text" id="radRoditelji"></div>
-            <div class="form-group"><label>Pol:</label><select id="radPol"><option value="M">Muški</option><option value="Ž">Ženski</option></select></div>
+            <div class="form-group"><label>Pol (M/Ž):</label><select id="radPol"><option value="M">Muški</option><option value="Ž">Ženski</option></select></div>
             <div class="form-group"><label>Bračno stanje:</label><select id="radBracno"><option value="Single">Neoženjen/neudata</option><option value="Married">Oženjen/udata</option><option value="Divorced">Razveden(a)</option><option value="Widow">Udovac(a)</option></select></div>
+        </div>
+        <div class="form-group">
+            <label>Slika pasoša (ili lične karte):</label>
+            <input type="file" id="radSlikaPasoša" accept="image/*" onchange="previewPasoš(event)">
+            <div id="radSlikaPreview" style="margin-top:10px;"></div>
         </div>
         <button onclick="sacuvajRadnika()" class="btn btn-success" style="width:100%;padding:12px;">💾 Sačuvaj</button>
     </div>
@@ -154,51 +159,26 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// ==================== KONFIGURACIJA ====================
+const SUPABASE_URL = 'https://itoyvqqssqmeyxawvulq.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_nbUWlCIXbB48NoBRhH4ucg_PfCAmau1';
+let supabaseClient = null;
+try { supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) {}
+
 var data = { objekti: [] };
 var aktivniObjektId = null;
 var aktivniFolder = null;
 var editingObjektId = null;
 var editingRadnikIndex = null;
 var trenutniUvoz = [];
-var supabaseClient = null;
 
-try {
-    if (typeof supabase !== 'undefined' && supabase.createClient) {
-        supabaseClient = supabase.createClient('https://itoyvqqssqmeyxawvulq.supabase.co', 'sb_publishable_nbUWlCIXbB48NoBRhH4ucg_PfCAmau1');
-    }
-} catch(e) { console.warn('Supabase:', e); }
-
-function loadLocal() { try { var s = localStorage.getItem('dokumenti_data'); if (s) { var p = JSON.parse(s); if (p && Array.isArray(p.objekti)) data = p; } } catch(e) {} }
-function saveLocal() { try { localStorage.setItem('dokumenti_data', JSON.stringify(data)); } catch(e) {} }
-async function loadFromCloud() {
-    loadLocal();
-    if (!supabaseClient) return;
-    try { var r = await supabaseClient.from('dokumenti_data').select('*').eq('id',1).maybeSingle(); if (r && r.data && r.data.podaci) { data = r.data.podaci; saveLocal(); } } catch(e) { console.warn('Cloud:', e); }
-}
-async function saveToCloud() {
-    saveLocal();
-    if (!supabaseClient) return;
-    try { await supabaseClient.from('dokumenti_data').upsert({ id: 1, podaci: data }); } catch(e) { console.warn('Cloud:', e); }
-}
-
-window.login = function() {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('appContent').style.display = 'block';
-    try { loadLocal(); renderMain(); } catch(e) { console.error(e); }
-    loadFromCloud().then(function(){ try { renderMain(); } catch(e){} });
-};
-window.logout = function() {
-    document.getElementById('loginScreen').style.display = 'flex';
-    document.getElementById('appContent').style.display = 'none';
-    aktivniObjektId = null; aktivniFolder = null;
-};
-
-var FOLDERI = [
+const FOLDERI = [
     { id: 'ambasada', naziv: '🏛️ Ambasada', boja: '#17a2b8' },
     { id: 'inspektor', naziv: '👮 Inspektor za strance', boja: '#ffc107' },
     { id: 'viza', naziv: '🛂 Viza', boja: '#6f42c1' }
 ];
-var TIPOVI_DOK = {
+
+const TIPOVI_DOK = {
     ambasada: [
         { id: 'confirmation', naziv: 'Confirmation Letter' },
         { id: 'invitation', naziv: 'Invitation Letter' },
@@ -215,62 +195,148 @@ var TIPOVI_DOK = {
     viza: [{ id: 'viza_obrazac', naziv: 'Zahtjev za vizu (43 polja)' }]
 };
 
+// ==================== STORAGE & UPLOAD ====================
+async function loadFromCloud() {
+    loadLocal();
+    if (!supabaseClient) return;
+    try {
+        const { data: result, error } = await supabaseClient.from('dokumenti_data').select('*').eq('id', 1).maybeSingle();
+        if (error) { console.warn(error.message); return; }
+        if (result && result.podaci) { data = result.podaci; saveLocal(); }
+    } catch(e) { console.warn(e); }
+}
+
+async function saveToCloud() {
+    saveLocal();
+    if (!supabaseClient) return;
+    try { await supabaseClient.from('dokumenti_data').upsert({ id: 1, podaci: data }); } catch(e) { console.warn(e); }
+}
+
+async function uploadPasoš(file, radnikId) {
+    if (!supabaseClient) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsDataURL(file);
+        });
+    }
+    try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${radnikId}_${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabaseClient.storage.from('pasosi').upload(fileName, file);
+        if (uploadError) throw uploadError;
+        const { data: publicUrl } = supabaseClient.storage.from('pasosi').getPublicUrl(fileName);
+        return publicUrl.publicUrl;
+    } catch (error) {
+        console.error(error);
+        return null;
+    }
+}
+
+function loadLocal() { try { var s = localStorage.getItem('dokumenti_data'); if (s) { var p = JSON.parse(s); if (p && Array.isArray(p.objekti)) data = p; } } catch(e) {} }
+function saveLocal() { try { localStorage.setItem('dokumenti_data', JSON.stringify(data)); } catch(e) {} }
+
+// ==================== INIT ====================
+window.login = function() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appContent').style.display = 'block';
+    loadLocal(); renderMain();
+    loadFromCloud().then(() => renderMain());
+};
+
+window.logout = function() {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('appContent').style.display = 'none';
+    aktivniObjektId = null; aktivniFolder = null;
+};
+
+// ==================== RENDER ====================
 function renderMain() {
     if (!aktivniObjektId) renderObjekti();
     else if (!aktivniFolder) renderFolderi();
     else renderRadnici();
 }
+
 function renderObjekti() {
-    var c = document.getElementById('mainContent');
-    if (!data.objekti || data.objekti.length === 0) { c.innerHTML = '<div class="no-data">Nema objekata. Kliknite "+ Novi objekat".</div>'; return; }
-    var html = '<div class="grid">';
-    data.objekti.forEach(function(o) {
-        var br = (o.radnici || []).length;
-        html += '<div class="card" onclick="otvoriObjekt(\'' + o.id + '\')"><div class="actions" onclick="event.stopPropagation()"><button class="btn btn-sm btn-warning" onclick="urediObjekt(\'' + o.id + '\')">✏️</button><button class="btn btn-sm btn-danger" onclick="obrisiObjekt(\'' + o.id + '\')">🗑</button></div><h3>🏢 ' + (o.naziv||'') + '</h3><div style="font-size:13px;color:#666;">' + (o.adresa||'') + '<br>PIB: ' + (o.pib||'-') + '<br>👥 ' + br + ' radnika</div></div>';
+    const c = document.getElementById('mainContent');
+    if (data.objekti.length === 0) { c.innerHTML = '<div class="no-data">Nema objekata. Kliknite "+ Novi objekat".</div>'; return; }
+    let html = '<div class="grid">';
+    data.objekti.forEach(o => {
+        const brRadnika = (o.radnici || []).length;
+        html += `<div class="card" onclick="otvoriObjekt('${o.id}')">
+            <div class="actions" onclick="event.stopPropagation()">
+                <button class="btn btn-sm btn-warning" onclick="urediObjekt('${o.id}')">✏️</button>
+                <button class="btn btn-sm btn-danger" onclick="obrisiObjekt('${o.id}')">🗑</button>
+            </div>
+            <h3>🏢 ${o.naziv}</h3>
+            <div style="font-size: 13px; color: #666;">${o.adresa || ''}<br>PIB: ${o.pib || '-'}<br>👥 ${brRadnika} radnika</div>
+        </div>`;
     });
-    c.innerHTML = html + '</div>';
+    html += '</div>';
+    c.innerHTML = html;
 }
+
 function renderFolderi() {
-    var c = document.getElementById('mainContent');
-    var o = data.objekti.find(function(x){ return x.id === aktivniObjektId; });
+    const c = document.getElementById('mainContent');
+    const o = data.objekti.find(x => x.id === aktivniObjektId);
     if (!o) { aktivniObjektId = null; renderMain(); return; }
-    var html = '<div class="breadcrumb"><a onclick="idiNaObjekte()">🏢 Objekti</a> › <b>' + o.naziv + '</b></div><div class="grid">';
-    FOLDERI.forEach(function(f) {
-        var br = (o.radnici||[]).filter(function(r){ return r.dokumenti && r.dokumenti[f.id]; }).length;
-        html += '<div class="card" onclick="otvoriFolder(\'' + f.id + '\')" style="border-left-color:' + f.boja + ';"><h3>' + f.naziv + '</h3><div style="font-size:13px;color:#666;">👥 ' + br + ' radnika sa dokumentima</div></div>';
+    let html = `<div class="breadcrumb"><a onclick="idiNaObjekte()">🏢 Objekti</a> › <b>${o.naziv}</b></div><div class="grid">`;
+    FOLDERI.forEach(f => {
+        const brDok = (o.radnici || []).filter(r => r.dokumenti && r.dokumenti[f.id]).length;
+        html += `<div class="card" onclick="otvoriFolder('${f.id}')" style="border-left-color: ${f.boja};"><h3>${f.naziv}</h3><div style="font-size: 13px; color: #666;">👥 ${brDok} radnika sa dokumentima</div></div>`;
     });
-    c.innerHTML = html + '</div>';
+    html += '</div>';
+    c.innerHTML = html;
 }
+
 function renderRadnici() {
-    var c = document.getElementById('mainContent');
-    var o = data.objekti.find(function(x){ return x.id === aktivniObjektId; });
-    var f = FOLDERI.find(function(x){ return x.id === aktivniFolder; });
-    var html = '<div class="breadcrumb"><a onclick="idiNaObjekte()">🏢 Objekti</a> › <a onclick="idiNaFoldere()">' + o.naziv + '</a> › <b>' + f.naziv + '</b></div>';
-    html += '<div style="margin-bottom:15px;display:flex;gap:8px;flex-wrap:wrap;"><button onclick="showUvoz()" class="btn btn-primary">📥 Uvezi iz Excela</button><button onclick="dodajRadnikaRucno()" class="btn btn-success">+ Dodaj ručno</button></div>';
-    if (!o.radnici || o.radnici.length === 0) { html += '<div class="no-data">Nema radnika.</div>'; }
-    else {
-        o.radnici.forEach(function(r, idx) {
-            var ima = r.dokumenti && r.dokumenti[aktivniFolder];
-            html += '<div class="radnik-card"><div class="radnik-info" onclick="generisiDokumente(' + idx + ')"><strong>' + (r.ime||'') + ' ' + (r.prezime||'') + '</strong><small>Pasoš: ' + (r.pasos||'-') + ' | ' + (r.zanimanje||'-') + '</small>' + (ima ? '<span class="badge" style="background:#d4edda;color:#155724;">✅ Ima</span>' : '<span class="badge" style="background:#fff3cd;color:#856404;">⚠️ Nema</span>') + '</div><div style="display:flex;gap:5px;"><button onclick="generisiDokumente(' + idx + ')" class="btn btn-sm btn-info">📄</button><button onclick="urediRadnika(' + idx + ')" class="btn btn-sm btn-warning">✏️</button><button onclick="obrisiRadnika(' + idx + ')" class="btn btn-sm btn-danger">🗑</button></div></div>';
+    const c = document.getElementById('mainContent');
+    const o = data.objekti.find(x => x.id === aktivniObjektId);
+    const f = FOLDERI.find(x => x.id === aktivniFolder);
+    let html = `<div class="breadcrumb"><a onclick="idiNaObjekte()">🏢 Objekti</a> › <a onclick="idiNaFoldere()">${o.naziv}</a> › <b>${f.naziv}</b></div>`;
+    html += '<div style="margin-bottom: 15px; display: flex; gap: 8px; flex-wrap: wrap;"><button onclick="showUvoz()" class="btn btn-primary">📥 Uvezi radnike iz Excela</button><button onclick="dodajRadnikaRucno()" class="btn btn-success">+ Dodaj ručno</button></div>';
+    if (!o.radnici || o.radnici.length === 0) {
+        html += '<div class="no-data">Nema radnika. Uvezite iz Excela ili dodajte ručno.</div>';
+    } else {
+        o.radnici.forEach((r, idx) => {
+            const imaDok = r.dokumenti && r.dokumenti[aktivniFolder];
+            html += `<div class="radnik-card">
+                <div class="radnik-info" onclick="generisiDokumente(${idx})" style="display:flex; align-items:center; gap:10px;">
+                    ${r.slika_pasosa ? `<img src="${r.slika_pasosa}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 5px; border: 1px solid #ddd;">` : `<div style="width: 40px; height: 40px; background: #eee; border-radius: 5px; display:flex; align-items:center; justify-content:center; font-size:10px; color:#999;">Nema</div>`}
+                    <div>
+                        <strong>${r.ime || ''} ${r.prezime || ''}</strong>
+                        <small>Pasoš: ${r.pasos || '-'} | ${r.zanimanje || '-'} | ${r.mjesto_rodenja || '-'}</small>
+                        ${imaDok ? '<span class="badge" style="background:#d4edda;color:#155724;">✅ Ima dokumente</span>' : '<span class="badge" style="background:#fff3cd;color:#856404;">⚠️ Nema dokumenata</span>'}
+                    </div>
+                </div>
+                <div style="display: flex; gap: 5px;">
+                    <button onclick="generisiDokumente(${idx})" class="btn btn-sm btn-info">📄 Generiši</button>
+                    <button onclick="urediRadnika(${idx})" class="btn btn-sm btn-warning">✏️</button>
+                    <button onclick="obrisiRadnika(${idx})" class="btn btn-sm btn-danger">🗑</button>
+                </div>
+            </div>`;
         });
     }
     c.innerHTML = html;
 }
+
 function idiNaObjekte() { aktivniObjektId = null; aktivniFolder = null; renderMain(); }
 function idiNaFoldere() { aktivniFolder = null; renderMain(); }
 function otvoriObjekt(id) { aktivniObjektId = id; aktivniFolder = null; renderMain(); }
 function otvoriFolder(id) { aktivniFolder = id; renderMain(); }
 
+// ==================== OBJEKTI ====================
 function showNoviObjekt() {
     editingObjektId = null;
     document.getElementById('objektTitle').textContent = 'Novi objekat';
-    ['Naziv','PIB','PDV','Adresa','Telefon','Email','Direktor','JMBG','Mjesto','Kontakt','Info'].forEach(function(k){ document.getElementById('obj' + k).value = ''; });
+    ['Naziv','PIB','PDV','Adresa','Telefon','Email','Direktor','JMBG','Mjesto','Kontakt','Info'].forEach(k => { document.getElementById('obj' + k).value = ''; });
     document.getElementById('objLogoPreview').innerHTML = '';
     document.getElementById('objLogo').value = '';
     showModal('objektModal');
 }
+
 function urediObjekt(id) {
-    var o = data.objekti.find(function(x){ return x.id === id; });
+    const o = data.objekti.find(x => x.id === id);
     if (!o) return;
     editingObjektId = id;
     document.getElementById('objektTitle').textContent = 'Uredi objekat';
@@ -285,92 +351,106 @@ function urediObjekt(id) {
     document.getElementById('objMjesto').value = o.mjesto || '';
     document.getElementById('objKontakt').value = o.kontakt || '';
     document.getElementById('objInfo').value = o.info || '';
-    if (o.logo) document.getElementById('objLogoPreview').innerHTML = '<img src="' + o.logo + '" style="max-height:80px;">';
+    if (o.logo) document.getElementById('objLogoPreview').innerHTML = `<img src="${o.logo}" style="max-height: 80px;">`;
     showModal('objektModal');
 }
+
 async function sacuvajObjekt() {
-    var naziv = document.getElementById('objNaziv').value.trim();
+    const naziv = document.getElementById('objNaziv').value.trim();
     if (!naziv) { toast('Unesite naziv firme', true); return; }
-    var logoEl = document.getElementById('objLogoPreview').querySelector('img');
-    var logo = logoEl ? logoEl.src : null;
+    const logo = document.getElementById('objLogoPreview').querySelector('img')?.src || null;
     if (editingObjektId) {
-        var o = data.objekti.find(function(x){ return x.id === editingObjektId; });
-        o.naziv = naziv; o.pib = document.getElementById('objPIB').value; o.pdv = document.getElementById('objPDV').value;
-        o.adresa = document.getElementById('objAdresa').value; o.telefon = document.getElementById('objTelefon').value;
-        o.email = document.getElementById('objEmail').value; o.direktor = document.getElementById('objDirektor').value;
-        o.jmbg = document.getElementById('objJMBG').value; o.mjesto = document.getElementById('objMjesto').value;
-        o.kontakt = document.getElementById('objKontakt').value; o.info = document.getElementById('objInfo').value;
+        const o = data.objekti.find(x => x.id === editingObjektId);
+        Object.assign(o, { naziv, pib: document.getElementById('objPIB').value, pdv: document.getElementById('objPDV').value, adresa: document.getElementById('objAdresa').value, telefon: document.getElementById('objTelefon').value, email: document.getElementById('objEmail').value, direktor: document.getElementById('objDirektor').value, jmbg: document.getElementById('objJMBG').value, mjesto: document.getElementById('objMjesto').value, kontakt: document.getElementById('objKontakt').value, info: document.getElementById('objInfo').value });
         if (logo) o.logo = logo;
     } else {
-        data.objekti.push({ id: 'o_' + Date.now(), naziv: naziv, pib: document.getElementById('objPIB').value, pdv: document.getElementById('objPDV').value, adresa: document.getElementById('objAdresa').value, telefon: document.getElementById('objTelefon').value, email: document.getElementById('objEmail').value, direktor: document.getElementById('objDirektor').value, jmbg: document.getElementById('objJMBG').value, mjesto: document.getElementById('objMjesto').value, kontakt: document.getElementById('objKontakt').value, info: document.getElementById('objInfo').value, logo: logo, radnici: [] });
+        data.objekti.push({ id: 'o_' + Date.now(), naziv, pib: document.getElementById('objPIB').value, pdv: document.getElementById('objPDV').value, adresa: document.getElementById('objAdresa').value, telefon: document.getElementById('objTelefon').value, email: document.getElementById('objEmail').value, direktor: document.getElementById('objDirektor').value, jmbg: document.getElementById('objJMBG').value, mjesto: document.getElementById('objMjesto').value, kontakt: document.getElementById('objKontakt').value, info: document.getElementById('objInfo').value, logo, radnici: [] });
     }
-    await saveToCloud();
-    closeModal('objektModal');
-    renderMain();
-    toast('✅ Objekat sačuvan');
-}
-function ucitajLogo(event) {
-    var f = event.target.files[0]; if (!f) return;
-    var r = new FileReader();
-    r.onload = function(e){ document.getElementById('objLogoPreview').innerHTML = '<img src="' + e.target.result + '" style="max-height:80px;">'; };
-    r.readAsDataURL(f);
-}
-async function obrisiObjekt(id) {
-    if (!confirm('Obrisati objekat?')) return;
-    data.objekti = data.objekti.filter(function(x){ return x.id !== id; });
-    await saveToCloud();
-    renderMain();
-    toast('🗑 Obrisano');
+    await saveToCloud(); closeModal('objektModal'); renderMain(); toast('✅ Objekat sačuvan');
 }
 
-function showUvoz() { document.getElementById('uvozTekst').value = ''; document.getElementById('uvozPreview').innerHTML = ''; trenutniUvoz = []; showModal('uvozModal'); }
+function ucitajLogo(event) {
+    const file = event.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => { document.getElementById('objLogoPreview').innerHTML = `<img src="${e.target.result}" style="max-height: 80px;">`; };
+    reader.readAsDataURL(file);
+}
+
+async function obrisiObjekt(id) {
+    if (!confirm('Obrisati objekat i sve radnike?')) return;
+    data.objekti = data.objekti.filter(x => x.id !== id);
+    await saveToCloud(); renderMain(); toast('🗑 Obrisano');
+}
+
+// ==================== UVOZ ====================
+function showUvoz() {
+    document.getElementById('uvozTekst').value = '';
+    document.getElementById('uvozPreview').innerHTML = '';
+    trenutniUvoz = [];
+    showModal('uvozModal');
+}
+
 function parsirajUvoz() {
-    var tekst = document.getElementById('uvozTekst').value.trim();
+    const tekst = document.getElementById('uvozTekst').value.trim();
     if (!tekst) { toast('Zalijepi tekst!', true); return; }
-    var linije = tekst.split(/\r?\n/), radnici = [], trenutni = null;
-    linije.forEach(function(linija) {
+    const linije = tekst.split(/\r?\n/);
+    const radnici = [];
+    let trenutni = null;
+    linije.forEach(linija => {
         if (!linija.trim()) return;
-        var d = linija.indexOf('\t') >= 0 ? linija.split('\t').map(function(x){return x.trim();}) : [linija.trim()];
-        var k = (d[0]||'').toLowerCase().trim(), v = (d[1]||'').trim();
-        if (!k) return;
-        if (k === 'name' || k === 'ime') { if (trenutni && (trenutni.ime || trenutni.pasos)) radnici.push(trenutni); trenutni = { ime: v }; if (d[4]) trenutni.zanimanje = d[4].trim(); return; }
+        let dijelovi = linija.includes('\t') ? linija.split('\t').map(x => x.trim()) : [linija.trim()];
+        const kljuc = (dijelovi[0] || '').toLowerCase().trim();
+        const vrijednost = (dijelovi[1] || '').trim();
+        if (!kljuc) return;
+        if (kljuc === 'name' || kljuc === 'ime') {
+            if (trenutni && (trenutni.ime || trenutni.pasos)) radnici.push(trenutni);
+            trenutni = { ime: vrijednost };
+            if (dijelovi[4]) trenutni.zanimanje = dijelovi[4].trim();
+            return;
+        }
         if (!trenutni) trenutni = {};
-        if (k === 'surname' || k === 'prezime') trenutni.prezime = v;
-        else if (k.indexOf('place of birth') >= 0) trenutni.mjesto_rodenja = v;
-        else if (k === 'address' || k === 'addrress') trenutni.adresa = v;
-        else if (k.indexOf('place of passport') >= 0) trenutni.mjesto_izdavanja = v;
-        else if (k === 'passport number') trenutni.pasos = v;
-        else if (k.indexOf('contact person') >= 0) trenutni.kontakt_osoba = v;
-        else if (k.indexOf('workplace') >= 0) trenutni.radno_mjesto = v;
+        if (kljuc === 'surname' || kljuc === 'prezime') trenutni.prezime = vrijednost;
+        else if (kljuc.includes('place of birth') || kljuc === 'mjesto_rođenja') trenutni.mjesto_rodenja = vrijednost;
+        else if (kljuc === 'addrress' || kljuc === 'address' || kljuc === 'adresa') trenutni.adresa = vrijednost;
+        else if (kljuc.includes('place of passport')) trenutni.mjesto_izdavanja = vrijednost;
+        else if (kljuc === 'passport number' || kljuc === 'broj pasoša') trenutni.pasos = vrijednost;
+        else if (kljuc.includes('contact person')) trenutni.kontakt_osoba = vrijednost;
+        else if (kljuc.includes('workplace') || kljuc.includes('nominated')) trenutni.radno_mjesto = vrijednost;
     });
     if (trenutni && (trenutni.ime || trenutni.pasos)) radnici.push(trenutni);
-    radnici.forEach(function(r){ if (!r.drzavljanstvo) r.drzavljanstvo = 'Egypt'; });
+    radnici.forEach(r => { if (!r.drzavljanstvo) r.drzavljanstvo = 'Egypt'; });
     trenutniUvoz = radnici;
-    if (radnici.length === 0) { document.getElementById('uvozPreview').innerHTML = '<div class="info-box info-danger">❌ Nema radnika.</div>'; return; }
-    var html = '<div class="info-box info-success">✅ ' + radnici.length + ' radnika:</div><table><thead><tr><th>Ime</th><th>Pasoš</th></tr></thead><tbody>';
-    radnici.forEach(function(r){ html += '<tr><td>' + (r.ime||'') + ' ' + (r.prezime||'') + '</td><td>' + (r.pasos||'-') + '</td></tr>'; });
-    html += '</tbody></table><button onclick="potvrdiUvoz()" class="btn btn-success" style="width:100%;padding:12px;margin-top:15px;">✅ Dodaj ' + radnici.length + '</button>';
+    if (radnici.length === 0) { document.getElementById('uvozPreview').innerHTML = '<div class="info-box info-danger">❌ Nisam prepoznao nijednog radnika.</div>'; return; }
+    let html = `<div class="info-box info-success">✅ Prepoznato <strong>${radnici.length}</strong> radnika:</div><table><thead><tr><th>Ime</th><th>Pasoš</th><th>Zanimanje</th></tr></thead><tbody>`;
+    radnici.forEach(r => { html += `<tr><td><strong>${r.ime || ''} ${r.prezime || ''}</strong></td><td>${r.pasos || '-'}</td><td>${r.zanimanje || '-'}</td></tr>`; });
+    html += `</tbody></table><button onclick="potvrdiUvoz()" class="btn btn-success" style="width: 100%; padding: 12px; margin-top: 15px;">✅ Dodaj ${radnici.length} radnika</button>`;
     document.getElementById('uvozPreview').innerHTML = html;
 }
+
 async function potvrdiUvoz() {
-    var o = data.objekti.find(function(x){ return x.id === aktivniObjektId; });
+    const o = data.objekti.find(x => x.id === aktivniObjektId);
     if (!o) return;
     if (!o.radnici) o.radnici = [];
-    var dodano = 0;
-    trenutniUvoz.forEach(function(r){ if (!o.radnici.find(function(x){ return x.pasos === r.pasos && r.pasos; })) { o.radnici.push(r); dodano++; } });
-    await saveToCloud(); closeModal('uvozModal'); renderMain(); toast('✅ ' + dodano);
+    let dodano = 0;
+    trenutniUvoz.forEach(r => { if (!o.radnici.find(x => x.pasos === r.pasos && r.pasos)) { o.radnici.push(r); dodano++; } });
+    await saveToCloud(); closeModal('uvozModal'); renderMain(); toast(`✅ Dodano ${dodano} radnika`);
 }
 
+// ==================== RADNIK CRUD ====================
 function dodajRadnikaRucno() {
     editingRadnikIndex = null;
-    ['Ime','Prezime','DatumRodjenja','MjestoRodjenja','Pasos','MjestoIzdavanja','DatumIzdavanja','DatumVazenja','Adresa','Zanimanje','Kontakt','RadnoMjesto','UgovorOd','UgovorDo','Plata','Roditelji'].forEach(function(k){ document.getElementById('rad' + k).value = ''; });
+    ['Ime','Prezime','DatumRodjenja','MjestoRodjenja','Pasos','MjestoIzdavanja','DatumIzdavanja','DatumVazenja','Adresa','Zanimanje','Kontakt','RadnoMjesto','UgovorOd','UgovorDo','Plata','Roditelji'].forEach(k => { document.getElementById('rad' + k).value = ''; });
     document.getElementById('radDrzavljanstvo').value = 'Egypt';
     document.getElementById('radPol').value = 'M';
     document.getElementById('radBracno').value = 'Single';
+    document.getElementById('radSlikaPreview').innerHTML = '';
+    document.getElementById('radSlikaPasoša').value = '';
     showModal('radnikModal');
 }
+
 function urediRadnika(idx) {
-    var o = data.objekti.find(function(x){ return x.id === aktivniObjektId; }), r = o.radnici[idx];
+    const o = data.objekti.find(x => x.id === aktivniObjektId);
+    const r = o.radnici[idx];
     editingRadnikIndex = idx;
     document.getElementById('radIme').value = r.ime || '';
     document.getElementById('radPrezime').value = r.prezime || '';
@@ -391,13 +471,30 @@ function urediRadnika(idx) {
     document.getElementById('radRoditelji').value = r.roditelji || '';
     document.getElementById('radPol').value = r.pol || 'M';
     document.getElementById('radBracno').value = r.bracno || 'Single';
+    if (r.slika_pasosa) {
+        document.getElementById('radSlikaPreview').innerHTML = `<img src="${r.slika_pasosa}" style="max-height:100px; border:1px solid #ccc; border-radius:5px;">`;
+    } else {
+        document.getElementById('radSlikaPreview').innerHTML = '';
+    }
+    document.getElementById('radSlikaPasoša').value = '';
     showModal('radnikModal');
 }
+
+function previewPasoš(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById('radSlikaPreview').innerHTML = `<img src="${e.target.result}" style="max-height:100px; border:1px solid #ccc; border-radius:5px;">`;
+    };
+    reader.readAsDataURL(file);
+}
+
 async function sacuvajRadnika() {
-    var o = data.objekti.find(function(x){ return x.id === aktivniObjektId; });
+    const o = data.objekti.find(x => x.id === aktivniObjektId);
     if (!o) return;
     if (!o.radnici) o.radnici = [];
-    var novi = {
+    const novi = {
         ime: document.getElementById('radIme').value.trim(),
         prezime: document.getElementById('radPrezime').value.trim(),
         datum_rodenja: document.getElementById('radDatumRodjenja').value.trim(),
@@ -418,79 +515,217 @@ async function sacuvajRadnika() {
         pol: document.getElementById('radPol').value,
         bracno: document.getElementById('radBracno').value
     };
-    if (editingRadnikIndex !== null) { novi.dokumenti = o.radnici[editingRadnikIndex].dokumenti || {}; o.radnici[editingRadnikIndex] = novi; }
-    else { o.radnici.push(novi); }
+    const fileInput = document.getElementById('radSlikaPasoša');
+    if (fileInput && fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const radnikId = novi.pasos || ('radnik_' + Date.now());
+        toast('⏳ Uploadujem sliku...');
+        novi.slika_pasosa = await uploadPasoš(file, radnikId);
+    } else if (editingRadnikIndex !== null) {
+        const stari = o.radnici[editingRadnikIndex];
+        if (stari.slika_pasosa) novi.slika_pasosa = stari.slika_pasosa;
+    }
+    if (editingRadnikIndex !== null) {
+        const stari = o.radnici[editingRadnikIndex];
+        novi.dokumenti = stari.dokumenti || {};
+        o.radnici[editingRadnikIndex] = novi;
+    } else {
+        o.radnici.push(novi);
+    }
+    document.getElementById('radSlikaPasoša').value = '';
+    document.getElementById('radSlikaPreview').innerHTML = '';
     await saveToCloud(); closeModal('radnikModal'); renderMain(); toast('✅ Radnik sačuvan');
 }
+
 async function obrisiRadnika(idx) {
-    if (!confirm('Obrisati?')) return;
-    var o = data.objekti.find(function(x){ return x.id === aktivniObjektId; });
+    if (!confirm('Obrisati radnika i sve dokumente?')) return;
+    const o = data.objekti.find(x => x.id === aktivniObjektId);
     o.radnici.splice(idx, 1);
-    await saveToCloud(); renderMain(); toast('🗑');
+    await saveToCloud(); renderMain(); toast('🗑 Obrisano');
 }
 
+// ==================== GENERISANJE ====================
 function generisiDokumente(idx) {
-    var o = data.objekti.find(function(x){ return x.id === aktivniObjektId; });
-    var r = o.radnici[idx];
-    var tipovi = TIPOVI_DOK[aktivniFolder] || [];
-    var html = '<div class="info-box info-info"><strong>Radnik:</strong> ' + r.ime + ' ' + r.prezime + '<br><strong>Pasoš:</strong> ' + (r.pasos || '-') + '</div><div class="grid-2"><div class="form-group"><label>Datum:</label><input type="date" id="genDatum" value="' + new Date().toISOString().slice(0,10) + '"></div><div class="form-group"><label>Mjesto:</label><input type="text" id="genMjesto" value="' + (o.mjesto || 'Budva') + '"></div></div><h3 style="margin-top:20px;font-size:16px;">Dokumenti:</h3><div style="background:#f8f9fa;padding:15px;border-radius:6px;">';
-    tipovi.forEach(function(t) {
-        var ima = r.dokumenti && r.dokumenti[aktivniFolder] && r.dokumenti[aktivniFolder][t.id];
-        html += '<label style="display:block;padding:8px;cursor:pointer;"><input type="checkbox" class="genDok" value="' + t.id + '" ' + (ima ? 'checked' : '') + ' style="margin-right:8px;">' + t.naziv + (ima ? ' ✓' : '') + '</label>';
+    const o = data.objekti.find(x => x.id === aktivniObjektId);
+    const r = o.radnici[idx];
+    const tipovi = TIPOVI_DOK[aktivniFolder] || [];
+    let html = `<div class="info-box info-info"><strong>Radnik:</strong> ${r.ime} ${r.prezime}<br><strong>Pasoš:</strong> ${r.pasos || '-'}<br><strong>Državljanstvo:</strong> ${r.drzavljanstvo || '-'}</div>`;
+    html += '<div class="grid-2"><div class="form-group"><label>Datum izdavanja dokumenta:</label>';
+    html += `<input type="date" id="genDatum" value="${new Date().toISOString().slice(0,10)}"></div>`;
+    html += '<div class="form-group"><label>Mjesto izdavanja:</label>';
+    html += `<input type="text" id="genMjesto" value="${o.mjesto || 'Budva'}"></div></div>`;
+    html += '<h3 style="margin-top: 20px; font-size: 16px;">Odaberi dokumente:</h3><div style="background: #f8f9fa; padding: 15px; border-radius: 6px;">';
+    tipovi.forEach(t => {
+        const ima = r.dokumenti && r.dokumenti[aktivniFolder] && r.dokumenti[aktivniFolder][t.id];
+        html += `<label style="display: block; padding: 8px; cursor: pointer;"><input type="checkbox" class="genDok" value="${t.id}" ${ima ? 'checked' : ''} style="margin-right: 8px;">${t.naziv} ${ima ? '<span style="color:#28a745;">✓</span>' : ''}</label>`;
     });
-    html += '</div><button onclick="generisiOdabrane(' + idx + ')" class="btn btn-success" style="width:100%;padding:14px;margin-top:15px;">📄 Generiši</button>';
+    html += `</div><button onclick="generisiOdabrane(${idx})" class="btn btn-success" style="width: 100%; padding: 14px; margin-top: 15px; font-size: 15px;">📄 Generiši dokumente</button>`;
     document.getElementById('generisiContent').innerHTML = html;
     showModal('generisiModal');
 }
+
 async function generisiOdabrane(idx) {
-    var o = data.objekti.find(function(x){ return x.id === aktivniObjektId; });
-    var r = o.radnici[idx];
-    var datum = document.getElementById('genDatum').value, mjesto = document.getElementById('genMjesto').value;
-    var odabrani = Array.from(document.querySelectorAll('.genDok:checked')).map(function(c){ return c.value; });
-    if (odabrani.length === 0) { toast('Odaberi barem jedan', true); return; }
+    const o = data.objekti.find(x => x.id === aktivniObjektId);
+    const r = o.radnici[idx];
+    const datum = document.getElementById('genDatum').value;
+    const mjesto = document.getElementById('genMjesto').value;
+    const odabrani = Array.from(document.querySelectorAll('.genDok:checked')).map(c => c.value);
+    if (odabrani.length === 0) { toast('Odaberi barem jedan dokument', true); return; }
     if (!r.dokumenti) r.dokumenti = {};
     if (!r.dokumenti[aktivniFolder]) r.dokumenti[aktivniFolder] = {};
-    odabrani.forEach(function(t){ r.dokumenti[aktivniFolder][t] = { datum: datum, mjesto: mjesto, kreirano: new Date().toISOString() }; });
+    odabrani.forEach(tip => { r.dokumenti[aktivniFolder][tip] = { datum, mjesto, kreirano: new Date().toISOString() }; });
     await saveToCloud();
-    odabrani.forEach(function(t) {
-        var html = generisiHTMLDokumenta(o, r, t, datum, mjesto);
-        var win = window.open('', '_blank');
-        win.document.write(html);
-        win.document.close();
+    odabrani.forEach(tip => {
+        const html = generisiHTMLDokumenta(o, r, tip, datum, mjesto);
+        const win = window.open('', '_blank');
+        win.document.write(html); win.document.close();
     });
-    closeModal('generisiModal'); renderMain(); toast('📄 ' + odabrani.length);
+    closeModal('generisiModal'); renderMain(); toast(`📄 Generisano ${odabrani.length} dokumenata`);
 }
 
+// ==================== HTML GENERATOR (AMBASADA & INSPEKTOR) ====================
 function generisiHTMLDokumenta(o, r, tip, datum, mjesto) {
     if (tip === 'viza_obrazac') return generisiVizaObrazac(o, r, datum, mjesto);
-    var ip = (r.ime||'') + ' ' + (r.prezime||'');
-    var s = '<div style="border-bottom:2px solid #333;padding-bottom:15px;margin-bottom:25px;"><strong>' + (o.naziv||'') + '</strong><br>' + (o.adresa||'') + '<br>' + (o.telefon ? 'Tel: ' + o.telefon : '') + '</div>';
-    if (tip === 'confirmation' || tip === 'invitation') {
-        s += '<h2 style="text-align:center;margin:30px 0;">' + tip.toUpperCase() + '</h2><p>To Whom it May Concern</p><p style="text-align:justify;line-height:1.8;margin-top:15px;">That <strong>' + ip + '</strong>, born on <strong>' + (r.datum_rodenja||'') + '</strong>, passport number <strong>' + (r.pasos||'') + '</strong> with permanent address on <strong>' + (r.adresa||'') + '</strong>, has been appointed to work in our company on the position of <strong>' + (r.zanimanje||'') + '</strong>. This letter is issued due to regulation of consular affairs and can not be used for other purposes.</p><p style="margin-top:50px;">Sincerely,</p><p style="margin-top:50px;"><strong>' + (o.direktor||'') + '</strong><br>Executive Director</p>';
+
+    const ip = `${r.ime || ''} ${r.prezime || ''}`.trim();
+    const memorandum = `
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 30px;">
+            <div>
+                <div style="font-size: 16px; font-weight: bold; font-family: Arial, sans-serif;">${o.naziv || 'CENTRO D.O.O'}</div>
+                <div style="font-size: 11px; margin-top: 5px; font-family: Arial, sans-serif;">
+                    ${o.adresa || 'Mediteranska - Tq Plaza br:53, Budva'}<br>
+                    Tel: ${o.telefon || '069 122 000'} | PIB: ${o.pib || '02458195'} | PDV: ${o.pdv || '81/31-01282-8'}
+                </div>
+            </div>
+            ${o.logo ? `<img src="${o.logo}" style="max-height: 60px;">` : ''}
+        </div>
+    `;
+
+    let sadrzaj = '';
+
+    if (tip === 'confirmation') {
+        sadrzaj = `
+            <h2 style="text-align: center; margin: 30px 0; font-family: Arial, sans-serif;">CONFIRMATION LETTER</h2>
+            <p style="margin-top: 20px;">To Whom it May Concern</p>
+            <p style="text-align: justify; line-height: 1.6; margin-top: 20px;">
+                That <strong>${ip}</strong>, born on <strong>${r.datum_rodenja || ''}</strong>, passport number <strong>${r.pasos || ''}</strong> with permanent address on <strong>${r.adresa || ''}</strong>, has been appointed to work in our company on the position of <strong>${r.zanimanje || ''}</strong>. This letter is issued due to regulation of consular affairs and issuance of work permit and can not be used for other purposes. If you need additional information do not hesitate to contact us.
+            </p>
+            <br><br><p>Sincerely,</p><br><br>
+            <p><strong>${o.direktor || 'Ratko Kovijanic'}</strong><br>Executive director</p>
+        `;
+    } else if (tip === 'invitation' || tip === 'pozivno') {
+        sadrzaj = `
+            <h2 style="text-align: center; margin: 20px 0; font-family: Arial, sans-serif;">INVITATION LETTER OF A LEGAL ENTITY</h2>
+            <h3 style="text-align: center; margin-bottom: 20px;">INVITATION LETTER</h3>
+            <p style="text-align: justify; line-height: 1.5;"><strong>${o.naziv || 'CENTRO D.O.O'} ${o.adresa || 'MEDITERANSKA 53, BUDVA, MONTENEGRO'}</strong> (name and headquarters of the legal entity - company)</p>
+            <p style="text-align: justify; line-height: 1.5;">PIB <strong>${o.pib || '02458195'}</strong> represented by <strong>${o.direktor || 'Ratko Kovijanic'}</strong> (tax identification number) (name and surname of the person authorized for representation)</p>
+            <p style="text-align: justify; line-height: 1.5;">JMBG: <strong>${o.jmbg || '3101990280012'}</strong> hereby invites: (unique identification number)</p>
+            <p style="text-align: justify; line-height: 1.5;">1. <strong>${ip}</strong> (name and surname) (date and place of birth)</p>
+            <p style="text-align: justify; line-height: 1.5;">born <strong>${r.datum_rodenja || ''}</strong>,</p>
+            <p style="text-align: justify; line-height: 1.5;">Citizen of <strong>${r.drzavljanstvo || 'Egypt'}</strong>, holder of travel document no. <strong>${r.pasos || ''}</strong>, issued in <strong>${r.mjesto_izdavanja || 'Egypt'}</strong>, on <strong>${r.datum_izdavanja || ''}</strong>, valid until <strong>${r.datum_vazenja || ''}</strong> with residence/stay in <strong>${r.adresa || ''}</strong>, occupation <strong>${r.zanimanje || ''}</strong>, employed at <strong>${o.naziv || 'CENTRO D.O.O'} ${o.adresa || 'MEDITERANSKA 53, BUDVA, MONTENEGRO'}</strong> (name and address of employer)</p>
+            <p style="text-align: justify; line-height: 1.5;">Visiting <strong>${o.naziv || 'CENTRO D.O.O'} ${o.adresa || 'MEDITERANSKA 53, BUDVA, MONTENEGRO'}</strong> from <strong>${r.ugovor_od || ''}</strong>, 1 (one) visit until <strong>${r.ugovor_do || ''}</strong>, with (specify number of visits: 1, 2 or more times) the total duration of stay of the appointed person(s) in Montenegro being 360 days, for the purpose of ESTABLISHING EMPLOYMENT RELATIONSHIP FOR YEAR-ROUND WORK.</p>
+            <p style="text-align: justify; line-height: 1.5;">The appointed person(s) will stay at the address: <strong>${o.adresa || 'mediteranska 53, budva'}</strong>.</p>
+            <p style="text-align: justify; line-height: 1.5;">Contact details for all detailed information: <strong>${o.kontakt || o.telefon || '+38269017788'}</strong></p>
+            <p style="text-align: justify; line-height: 1.5;">The costs arising from the visitor's stay are borne by:</p>
+            <p style="text-align: justify; line-height: 1.5;">visitor personally: accommodation sustenance travel expenses inviter (guarantor): accommodation sustenance travel expenses third party bearing the costs: <strong>${o.naziv || 'CENTRO D.O.O'} ${o.adresa || 'MEDITERANSKA 53, BUDVA, MONTENEGRO'}</strong> (specify name of natural person/name of legal entity)</p>
+            <p style="text-align: justify; line-height: 1.5;">As a person authorized to represent the legal entity, I take full responsibility that, if necessary, I will bear all costs of the appointed person's stay in Montenegro, including costs of accommodation and sustenance, as well as costs of leaving Montenegro.</p>
+            <p style="text-align: justify; line-height: 1.5;">I also undertake to fulfill all obligations of the appointed person arising towards the Ministry of Internal Affairs of Montenegro by possibly placing the appointed person(s) in the Reception Center for Foreigners until forced removal from Montenegro.</p>
+            <p style="margin-top: 40px;">In ${mjesto}, ${datum}. (place and date)</p>
+            <br><br>
+            <p><strong>${o.direktor || 'Ratko Kovijanić'}</strong><br>Executive Director</p>
+        `;
     } else if (tip === 'ponuda') {
-        s += '<h2 style="text-align:center;margin:30px 0;">PONUDA O RADU</h2><p style="text-align:justify;line-height:1.8;"><strong>' + (o.naziv||'') + '</strong>, ' + (o.adresa||'') + ', PIB: ' + (o.pib||'') + ' kao poslodavac<br><br>i<br><br><strong>' + ip + '</strong>, državljanin ' + (r.drzavljanstvo||'') + ', pasoš <strong>' + (r.pasos||'') + '</strong> kao zaposleni.<br><br><strong>Član 1.</strong> Planira se radni odnos na poziciji ' + (r.zanimanje||'') + '.<br><br><strong>Član 3.</strong> Ugovor od ' + (r.ugovor_od||'') + ' do ' + (r.ugovor_do||'') + '.<br><br><strong>Član 9.</strong> Plata: ' + (r.plata||'800') + ',00 EUR.</p><table style="width:100%;margin-top:50px;"><tr><td style="text-align:center;">Zaposleni<br><br><br>_____________________<br>' + ip + '</td><td style="text-align:center;">Poslodavac<br><br><br>_____________________<br>' + (o.direktor||'') + '</td></tr></table>';
-    } else if (tip === 'invitation_legal' || tip === 'pozivno') {
-        s += '<h2 style="text-align:center;margin:30px 0;">POZIVNO PISMO PRAVNOG LICA</h2><p style="text-align:justify;line-height:1.8;"><strong>' + (o.naziv||'') + '</strong> ' + (o.adresa||'') + ', MONTENEGRO<br>PIB ' + (o.pib||'') + ', zastupa <strong>' + (o.direktor||'') + '</strong><br>JMBG: ' + (o.jmbg||'') + '<br><br>1. <strong>' + ip + '</strong> rođen ' + (r.datum_rodenja||'') + ', ' + (r.mjesto_rodenja||'') + '<br><br>Državljanin ' + (r.drzavljanstvo||'') + ', pasoš br. <strong>' + (r.pasos||'') + '</strong> izdat u ' + (r.mjesto_izdavanja||'') + ' ' + (r.datum_izdavanja||'') + ' do ' + (r.datum_vazenja||'') + ', zanimanje <strong>' + (r.zanimanje||'') + '</strong>.<br><br>U posjetu u periodu ' + (r.ugovor_od||'') + ' - ' + (r.ugovor_do||'') + ' u svrhu ZASNIVANJA RADNOG ODNOSA.</p><p style="margin-top:40px;">U ' + mjesto + ', ' + datum + '</p><p style="margin-top:40px;"><strong>' + (o.direktor||'') + '</strong></p>';
+        sadrzaj = `
+            <p>Po odluci menadžmenta preduzeća dana ${datum.split('-').reverse().join('.')} godine zaključuje se</p>
+            <h2 style="text-align: center; margin: 20px 0; font-family: Arial, sans-serif;">PONUDA O RADU</h2>
+            <p style="text-align: justify; line-height: 1.5;"><strong>${o.naziv || 'CENTRO D.O.O'}, ${o.adresa || 'MEDITERANSKA – TQ PLAZA BR:53, BUDVA'}, TEL: ${o.telefon || '069 122 000'}, PIB: ${o.pib || '02458195'}, PDV: ${o.pdv || '81/31-01282-8'}</strong>, kao poslodavac (u daljem tekstu Poslodavac), s jedne strane</p>
+            <p style="text-align: center; margin: 10px 0;">i</p>
+            <p style="text-align: justify; line-height: 1.5;"><strong>${ip}</strong>, državljanin ${r.drzavljanstvo || 'Egipta'}, broj pasoša ${r.pasos || ''} izdatog od MUP-a ${r.mjesto_izdavanja || 'Egipta'}, ${r.datum_izdavanja || ''}–${r.datum_vazenja || ''}. godine kao zaposleni (u daljem tekstu Zaposleni) sa druge strane.</p>
+            <p style="margin-top: 15px;"><strong>Član 1.</strong></p>
+            <p style="text-align: justify; line-height: 1.5;"><strong>${o.naziv || 'CENTRO D.O.O'}</strong> planira da zasnuje radni odnos sa <strong>${ip}</strong>, državljaninom ${r.drzavljanstvo || 'Egipta'} sa nivoom kvalifikacije obrazovanja I i II. Zaposleni će obavljati poslove ${r.zanimanje || 'Kuvara'} u [${r.radno_mjesto || 'Restoran BABALUU'}], sa svim aktivnostima koje se odnose na ovo radno mjesto.</p>
+            <p style="margin-top: 10px;"><strong>Član 2.</strong></p>
+            <p style="text-align: justify; line-height: 1.5;">Zaposleni i Poslodavac prihvataju sva prava, obaveze i odgovornosti utvrđene zakonom.</p>
+            <p style="margin-top: 10px;"><strong>Član 3.</strong></p>
+            <p style="text-align: justify; line-height: 1.5;">Zaposleni zasniva radni odnos na određeno vrijeme u trajanju od ${r.ugovor_od || ''}–${r.ugovor_do || ''}. godine, a u periodu od dana dobijanja radne dozvole za privremeni boravak.</p>
+            <p style="margin-top: 10px;"><strong>Član 4.</strong></p>
+            <p style="text-align: justify; line-height: 1.5;">Zaposleni će obavljati poslove u ${mjesto}.</p>
+            <p style="margin-top: 10px;"><strong>Član 5.</strong></p>
+            <p style="text-align: justify; line-height: 1.5;">Zaposleni zasniva radni odnos sa punim radnim vremenom u trajanju od 8 časova dnevno.</p>
+            <p style="margin-top: 10px;"><strong>Član 6.</strong></p>
+            <p style="text-align: justify; line-height: 1.5;">Radno vrijeme iznosi 40 časova nedeljno i raspoređuje se na sledeći način: osam časova dnevno od 08:00 do 16:00 časova jednokratno.</p>
+            <p style="margin-top: 10px;"><strong>Član 7.</strong></p>
+            <p style="text-align: justify; line-height: 1.5;">Zaposleni ima pravo na odmor u toku dnevnog rada u trajanju od 30 minuta.</p>
+            <p style="margin-top: 10px;"><strong>Član 8.</strong></p>
+            <p style="text-align: justify; line-height: 1.5;">Zaposleni ima, u skladu sa zakonom i kolektivnim ugovorom, pravo na korišćenje nedeljnog i godišnjeg odmora.</p>
+            <div style="page-break-before: always;"></div>
+            <p><strong>Član 9.</strong></p>
+            <p style="text-align: justify; line-height: 1.5;">Zarada zaposlenog utvrđuje se na osnovu dogovora sa poslodavcem... Zaposlenom pripada mjesečna zarada u iznosu od ${r.plata || '800'},00 EUR. Poslodavac se obavezuje da Zaposlenom najmanje jednom mjesečno izvrši obračun zarade...</p>
+            <p style="margin-top: 10px;"><strong>Član 10.</strong></p>
+            <p style="text-align: justify; line-height: 1.5;">Zaposleni ima pravo na naknadu zarade u visini određeno Opštim kolektivnim ugovorom, za dane praznika u kojima se ne radi, za vrijeme godišnjeg odmora, plaćenog odsustva i slično.</p>
+            <p style="margin-top: 10px;"><strong>Član 11.</strong></p>
+            <p style="text-align: justify; line-height: 1.5;">Poslodavac se obavezuje da obezbjedi i sprovodi zaštitu na radu u skladu sa zakonom, propisanim mjerama i normativima zaštite na radu, odnosno kolektivnim ugovorom.</p>
+            <p style="margin-top: 10px;"><strong>Član 12.</strong></p>
+            <p style="text-align: justify; line-height: 1.5;">Zaposleni podliježe disciplinskoj odgovornosti u skladu sa zakonom.</p>
+            <p style="margin-top: 10px;"><strong>Član 13.</strong></p>
+            <p style="text-align: justify; line-height: 1.5;">Ako Zaposleni u radu, odnosno u vezi sa radom, namjerom ili iz krajnje nepažnje prouzrokuje štetu Poslodavcu, dužan je štetu nadoknaditi, u skladu sa zakonom i kolektivnim ugovorom.</p>
+            <p style="margin-top: 10px;"><strong>Član 14.</strong></p>
+            <p style="text-align: justify; line-height: 1.5;">Poslodavac se obavezuje da odmah po postupanju Zaposlenog na rad podnese propisane prijave i uplaćuje propisane doprinose na zaradu.</p>
+            <p style="margin-top: 10px;"><strong>Član 15.</strong></p>
+            <p style="text-align: justify; line-height: 1.5;">Poslodavac se obavezuje da za slučaj prestanka radnog odnosa Zaposlenom vrati uredno popunjenu radnu knjižicu.</p>
+            <p style="margin-top: 10px;"><strong>Član 16.</strong></p>
+            <p style="text-align: justify; line-height: 1.5;">Ova ponuda je sačinjena u dva primjerka od kojih svaka strana zadržava po dva, a jedan primjerak se prilaže Ministerstvu unutrašnjih poslova u svrhu dobijanja dozvole za privremeni boravak i rad Zaposlenog.</p>
+            <br><br>
+            <table style="width:100%; margin-top:40px;">
+                <tr>
+                    <td style="text-align:center; width:50%;">Zaposleni<br><br><br>_________________________<br>${ip}</td>
+                    <td style="text-align:center; width:50%;">Executive director<br><br><br>_________________________<br>${o.direktor || 'Ratko Kovijanic'}</td>
+                </tr>
+            </table>
+        `;
     } else if (tip === 'izjava_smjestaj') {
-        s += '<h2 style="text-align:center;margin:30px 0;">IZJAVA</h2><p style="text-align:justify;line-height:1.8;">Kojom <strong>' + (o.naziv||'') + '</strong>, PIB: ' + (o.pib||'') + ', zastupa <strong>' + (o.direktor||'') + '</strong>, JMBG: ' + (o.jmbg||'') + ',</p><p style="text-align:center;font-weight:bold;font-size:18px;margin:30px 0;">IZJAVLJUJEM DA</p><p style="text-align:justify;line-height:2;"><strong>' + ip + '</strong>, državljanin ' + (r.drzavljanstvo||'') + ', rođen ' + (r.datum_rodenja||'') + ', stanuje na adresi ' + (r.adresa||'') + ', i ovim potvrđujem da je stambeno obezbijeđen.</p><p style="margin-top:60px;text-align:right;"><strong>DAVALAC IZJAVE</strong><br><br>' + (o.direktor||'') + '</p>';
+        sadrzaj = `
+            <h2 style="text-align: center; margin: 30px 0; font-family: Arial, sans-serif;">IZJAVA</h2>
+            <p style="text-align: justify; line-height: 1.8;">Kojom <strong>${o.naziv || 'CENTRO D.O.O'}</strong>, PIB: ${o.pib || '02458195'}, a kojeg zastupa Izvršni direktor <strong>${o.direktor || 'Vuković Predrag'}</strong>, iz ${o.mjesto || 'Budve'}, JMBG: ${o.jmbg || '1209976200015'},</p>
+            <h3 style="text-align: center; margin: 40px 0;">IZJAVLJUJEM DA</h3>
+            <p style="text-align: justify; line-height: 2.5;">
+                ______________________________________, državljanin/ka ______________________________________, rođen/a dana __________________ godine, JMBG: ______________________, sa ličnom kartom broj __________________, izdatom od strane ______________________, dana __________________ godine, koja važi do __________________ godine,<br><br>
+                stanuje u mom stanu na adresi ______________________________________, upisanom u "Listu nepokretnosti __________________", kat.parcela __________________,
+            </p>
+            <p style="text-align: justify; line-height: 1.8; margin-top: 20px;">i ovim potvrđujem da je navedeno lice stambeno obezbijeđeno (bez novčane nadoknade).</p>
+            <p style="text-align: justify; line-height: 1.8; margin-top: 20px;">Ova izjava se koristi za regulisanje boravka za __________________ i u druge svrhe se ne može koristiti.</p>
+            <br><br><br>
+            <p style="text-align: right;"><strong>DAVALAC IZJAVE</strong></p>
+        `;
     } else if (tip === 'izjava_firma') {
-        s += '<h2 style="text-align:center;margin:30px 0;">IZJAVA</h2><p style="text-align:justify;line-height:1.8;">' + (o.info || o.naziv + ' posluje u oblasti ugostiteljstva.') + '</p><p style="text-align:justify;line-height:1.8;margin-top:15px;">Potvrđujemo da je <strong>' + ip + '</strong>, rođen ' + (r.datum_rodenja||'') + ', pasoš <strong>' + (r.pasos||'') + '</strong>, imenovan na poziciji <strong>' + (r.zanimanje||'') + '</strong>.</p><p style="margin-top:40px;">S poštovanjem,</p><p style="margin-top:50px;"><strong>' + (o.direktor||'') + '</strong></p>';
-    } else {
-        s += '<h2 style="text-align:center;margin:30px 0;">' + tip + '</h2><p>Radnik: <strong>' + ip + '</strong></p><p>Pasoš: ' + (r.pasos||'') + '</p>';
+        sadrzaj = `
+            <h2 style="text-align: center; margin: 30px 0; font-family: Arial, sans-serif;">IZJAVA</h2>
+            <p style="text-align: justify; line-height: 1.6;">Firma ${o.naziv || 'Centro d.o.o.'}, koja posluje u oblasti ugostiteljstva od 2011. godine, sa restoranom Babaluu u Budvi, zapošljava od 30 do 50 radnika, u zavisnosti od sezone. Zaposleni su trenutno pretežno državljani zemalja bivše Jugoslavije: Crne Gore, Srbije, Bosne i Hercegovine i Sjeverne Makedonije.</p>
+            <p style="text-align: justify; line-height: 1.6; margin-top: 15px;">Ovim putem potvrđujemo da je <strong>${ip}</strong>, rođen ${r.datum_rodenja || ''} godine, broj pasoša <strong>${r.pasos || ''}</strong>, sa stalnom adresom ${r.adresa || ''}, imenovan da radi u našoj kompaniji na poziciji <strong>${r.zanimanje || ''}</strong>.</p>
+            <p style="text-align: justify; line-height: 1.6; margin-top: 15px;">Vrijeme Trajanja ugovora Godinu dana i planirana plata: ${r.plata || '800'} eura</p>
+            <p style="text-align: justify; line-height: 1.6; margin-top: 15px;">Imenovani posjeduje značajno međunarodno radno iskustvo, i to:<br>• od 2015. do 2021. godine radio je u Saudijskoj Arabiji, na poziciji kuvara, u restoranu LENTALIE Catering and Open Buffets<br>• od aprila 2024. do oktobra 2024. godine radio je u Crnoj Gori, na poziciji kuvara, u Hotel Resort Pearl Beach, Čanj – Bar</p>
+            <p style="text-align: justify; line-height: 1.6; margin-top: 15px;">Do gospodina ${ip} došli smo putem preporuke. Ova izjava se izdaje u svrhu regulisanja konzularnih poslova i dobijanja radne dozvole i ne može se koristiti u druge svrhe. Ukoliko su vam potrebne dodatne informacije, slobodno nas kontaktirajte.</p>
+            <br><br>
+            <p style="text-align: right;"><strong>S poštovanjem,</strong><br><br>${o.direktor || 'Ratko Kovijanić'}<br>Izvršni direktor / Executive Director<br>Telefon: ${o.telefon || '069 170 788'}</p>
+        `;
     }
-    return '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + tip + '</title><style>@page{size:A4;margin:20mm;}body{font-family:"Times New Roman",serif;font-size:12pt;padding:20px;line-height:1.5;}</style></head><body>' + s + '</body></html>';
+
+    return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${tip}</title>
+    <style>
+        @page { size: A4; margin: 20mm; }
+        body { font-family: 'Times New Roman', serif; font-size: 12pt; line-height: 1.5; color: #000; padding: 20px; }
+        p { margin-bottom: 10px; }
+    </style></head><body>${memorandum}${sadrzaj}</body></html>`;
 }
 
+// ==================== VIZA (3 STRANICE, EDITABILNO) ====================
 function generisiVizaObrazac(o, r, datum, mjesto) {
-    var ime = r.ime||'', prezime = r.prezime||'', pasos = r.pasos||'';
-    var title = 'Zahtjev za vizu - ' + ime + ' ' + prezime;
-    var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + title + '</title><style>@page{size:A4;margin:8mm;}*{box-sizing:border-box;}body{font-family:Arial,sans-serif;font-size:8pt;margin:0;background:#888;}.toolbar{position:fixed;top:0;left:0;right:0;background:#222;color:#fff;padding:8px 15px;display:flex;gap:8px;align-items:center;z-index:9999;font-size:13px;font-family:"Segoe UI",sans-serif;}.toolbar button{padding:7px 14px;border:none;border-radius:4px;cursor:pointer;font-weight:bold;font-size:13px;}.toolbar .btn-print{background:#17a2b8;color:#fff;}.toolbar .btn-close{background:#dc3545;color:#fff;}.pages{padding-top:55px;}.page{width:194mm;min-height:281mm;background:#fff;margin:10px auto;padding:5mm;page-break-after:always;box-shadow:0 2px 8px rgba(0,0,0,0.3);}.page:last-child{page-break-after:auto;}table{width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:3mm;}td,th{border:0.6pt solid #000;padding:2px 3px;vertical-align:top;}.lbl{font-size:6.3pt;font-weight:bold;line-height:1.15;}.lbl-sub{font-size:5.8pt;font-style:italic;color:#222;}.num{font-size:7pt;font-weight:bold;text-align:center;width:6mm;}.val{display:inline-block;min-width:30px;min-height:11px;font-size:8.5pt;font-weight:bold;border-bottom:0.5pt dotted #ccc;padding:0 2px;}.val:focus{background:#fffbe6;}.val-empty{display:block;min-height:14px;width:100%;font-size:8.5pt;font-weight:bold;padding:1px 2px;}.cb-wrap{display:inline-flex;align-items:center;gap:3px;font-size:6.5pt;margin-right:8px;cursor:pointer;}.checkbox{display:inline-block;width:7px;height:7px;border:0.8pt solid #000;background:#fff;position:relative;flex-shrink:0;cursor:pointer;}.checkbox.checked{background:#000;}.checkbox.checked::after{content:"✓";color:#fff;font-size:7pt;font-weight:bold;position:absolute;top:-2px;left:0.3px;line-height:1;}.header-title{text-align:center;font-weight:bold;}.title-main{font-size:11pt;}.title-sub{font-size:8pt;font-style:italic;}.photo-cell{width:40mm;text-align:center;padding:4px;}.photo-box{width:35mm;height:45mm;border:0.8pt solid #000;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:7pt;color:#555;text-align:center;}.section-title{font-size:6.5pt;font-weight:bold;text-align:center;background:#f0f0f0;padding:2px;}.right-side{width:42mm;vertical-align:top;padding:3px;}.right-side .section-title{font-size:6pt;}.napomene-line{border-bottom:0.5pt dotted #666;height:10px;margin:1px 0;}.statement-box{font-size:5.6pt;line-height:1.25;padding:4px;text-align:justify;}.statement-box p{margin:0 0 3px 0;}@media print{body{background:#fff;}.toolbar{display:none!important;}.pages{padding-top:0;}.page{margin:0;box-shadow:none;}.val{border-bottom:none;}}</style></head><body>';
+    const ime = r.ime || '', prezime = r.prezime || '', pasos = r.pasos || '';
+    const title = 'Zahtjev za vizu - ' + ime + ' ' + prezime;
+    let html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>' + title + '</title><style>@page{size:A4;margin:8mm;}*{box-sizing:border-box;}body{font-family:Arial,sans-serif;font-size:8pt;margin:0;background:#888;}.toolbar{position:fixed;top:0;left:0;right:0;background:#222;color:#fff;padding:8px 15px;display:flex;gap:8px;align-items:center;z-index:9999;font-size:13px;}.toolbar button{padding:7px 14px;border:none;border-radius:4px;cursor:pointer;font-weight:bold;font-size:13px;}.toolbar .btn-print{background:#17a2b8;color:#fff;}.toolbar .btn-close{background:#dc3545;color:#fff;}.pages{padding-top:55px;}.page{width:194mm;min-height:281mm;background:#fff;margin:10px auto;padding:5mm;page-break-after:always;box-shadow:0 2px 8px rgba(0,0,0,0.3);}.page:last-child{page-break-after:auto;}table{width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:3mm;}td,th{border:0.6pt solid #000;padding:2px 3px;vertical-align:top;}.lbl{font-size:6.3pt;font-weight:bold;line-height:1.15;}.lbl-sub{font-size:5.8pt;font-style:italic;color:#222;}.num{font-size:7pt;font-weight:bold;text-align:center;width:6mm;}.val{display:inline-block;min-width:30px;min-height:11px;font-size:8.5pt;font-weight:bold;border-bottom:0.5pt dotted #ccc;padding:0 2px;}.val:focus{background:#fffbe6;}.val-empty{display:block;min-height:14px;width:100%;font-size:8.5pt;font-weight:bold;padding:1px 2px;}.cb-wrap{display:inline-flex;align-items:center;gap:3px;font-size:6.5pt;margin-right:8px;cursor:pointer;}.checkbox{display:inline-block;width:7px;height:7px;border:0.8pt solid #000;background:#fff;position:relative;flex-shrink:0;cursor:pointer;}.checkbox.checked{background:#000;}.checkbox.checked::after{content:"✓";color:#fff;font-size:7pt;font-weight:bold;position:absolute;top:-2px;left:0.3px;line-height:1;}.header-title{text-align:center;font-weight:bold;}.title-main{font-size:11pt;}.title-sub{font-size:8pt;font-style:italic;}.photo-cell{width:40mm;text-align:center;padding:4px;}.photo-box{width:35mm;height:45mm;border:0.8pt solid #000;margin:0 auto;display:flex;align-items:center;justify-content:center;font-size:7pt;color:#555;text-align:center;}.section-title{font-size:6.5pt;font-weight:bold;text-align:center;background:#f0f0f0;padding:2px;}.right-side{width:42mm;vertical-align:top;padding:3px;}.right-side .section-title{font-size:6pt;}.napomene-line{border-bottom:0.5pt dotted #666;height:10px;margin:1px 0;}.statement-box{font-size:5.6pt;line-height:1.25;padding:4px;text-align:justify;}.statement-box p{margin:0 0 3px 0;}@media print{body{background:#fff;}.toolbar{display:none!important;}.pages{padding-top:0;}.page{margin:0;box-shadow:none;}.val{border-bottom:none;}}</style></head><body>';
     html += '<div class="toolbar"><strong>📄 Zahtjev za vizu</strong><span style="color:#aaa;font-size:11px;">' + ime + ' ' + prezime + ' — ' + pasos + '</span><button class="btn-print" onclick="window.print()">🖨️ Štampaj / PDF</button><button class="btn-close" onclick="window.close()">✖ Zatvori</button></div>';
     html += '<div class="pages">';
 
-    function cb(checked, label) {
-        return '<label class="cb-wrap"><span class="checkbox' + (checked ? ' checked' : '') + '" onclick="this.classList.toggle(\'checked\')"></span>' + label + '</label>';
-    }
+    function cb(checked, label) { return '<label class="cb-wrap"><span class="checkbox' + (checked ? ' checked' : '') + '" onclick="this.classList.toggle(\'checked\')"></span>' + label + '</label>'; }
     function v(val) { return '<span class="val" contenteditable="true">' + (val || '') + '</span>'; }
 
     // STRANICA 1
@@ -506,9 +741,7 @@ function generisiVizaObrazac(o, r, datum, mjesto) {
         ['6.', 'Sadašnje državljanstvo', 'Current nationality / Nationalité actuelle', r.drzavljanstvo || ''],
         ['7.', 'Državljanstvo pri rođenju', 'Original nationality / Nationalité d\'origine', r.drzavljanstvo || '']
     ];
-    p1.forEach(function(row) {
-        html += '<tr><td class="num">' + row[0] + '</td><td><div class="lbl" contenteditable="true">' + row[1] + '</div><div class="lbl-sub" contenteditable="true">' + row[2] + '</div><div style="margin-top:3px;">' + v(row[3]) + '</div></td></tr>';
-    });
+    p1.forEach(function(row) { html += '<tr><td class="num">' + row[0] + '</td><td><div class="lbl" contenteditable="true">' + row[1] + '</div><div class="lbl-sub" contenteditable="true">' + row[2] + '</div><div style="margin-top:3px;">' + v(row[3]) + '</div></td></tr>'; });
     html += '<tr><td class="num">8.</td><td><div class="lbl" contenteditable="true">Pol / Sex / Sexe</div><div style="margin-top:4px;">' + cb(r.pol==='M', '<span contenteditable="true">Muški / Male</span>') + ' &nbsp; ' + cb(r.pol==='Ž', '<span contenteditable="true">Ženski / Female</span>') + '</div></td></tr>';
     html += '<tr><td class="num">9.</td><td><div class="lbl" contenteditable="true">Bračno stanje / Marital status</div><div style="margin-top:4px;">' + cb(r.bracno==='Single', '<span contenteditable="true">Neoženjen/neudata / Single</span>') + cb(r.bracno==='Married', '<span contenteditable="true">Oženjen/udata / Married</span>') + '</div><div style="margin-top:2px;">' + cb(r.bracno==='Divorced', '<span contenteditable="true">Razveden(a) / Divorced</span>') + cb(r.bracno==='Widow', '<span contenteditable="true">Udovac(a) / Widow(er)</span>') + '</div></td></tr>';
     html += '<tr><td class="num">10.</td><td><div class="lbl" contenteditable="true">Vrsta putne isprave / Type of passport</div><div style="margin-top:4px;">' + cb(true, '<span contenteditable="true">Običan pasoš / National passport</span>') + cb(false, '<span contenteditable="true">Diplomatski pasoš / Diplomatic</span>') + '</div><div>' + cb(false, '<span contenteditable="true">Službeni pasoš / Service</span>') + cb(false, '<span contenteditable="true">Druga putna isprava / Other</span>') + '</div></td></tr>';
@@ -543,9 +776,7 @@ function generisiVizaObrazac(o, r, datum, mjesto) {
     // STRANICA 3
     html += '<div class="page"><table>';
     var p3 = [['33.', 'Ime bračnog druga', 'Spouse first name'],['34.', 'Prezime bračnog druga', 'Spouse family name'],['35.', 'Prezime pri rođenju', 'Spouse name at birth'],['36.', 'Datum rođenja bračnog druga', 'Spouse date of birth'],['37.', 'Mjesto rođenja bračnog druga', 'Spouse place of birth']];
-    p3.forEach(function(row) {
-        html += '<tr><td class="num">' + row[0] + '</td><td><div class="lbl"><span contenteditable="true">' + row[1] + '</span> <span class="lbl-sub" contenteditable="true">/ ' + row[2] + '</span></div><div class="val-empty" contenteditable="true"></div></td></tr>';
-    });
+    p3.forEach(function(row) { html += '<tr><td class="num">' + row[0] + '</td><td><div class="lbl"><span contenteditable="true">' + row[1] + '</span> <span class="lbl-sub" contenteditable="true">/ ' + row[2] + '</span></div><div class="val-empty" contenteditable="true"></div></td></tr>'; });
     html += '<tr><td class="num">38.</td><td><div class="lbl" contenteditable="true">Djeca / Children — Ime i prezime — Datum rođenja</div><table style="margin-top:4px;"><tr><td class="num">1.</td><td class="val-empty" contenteditable="true"></td><td class="val-empty" contenteditable="true" style="width:35%;"></td></tr><tr><td class="num">2.</td><td class="val-empty" contenteditable="true"></td><td class="val-empty" contenteditable="true" style="width:35%;"></td></tr><tr><td class="num">3.</td><td class="val-empty" contenteditable="true"></td><td class="val-empty" contenteditable="true" style="width:35%;"></td></tr></table></td></tr>';
     html += '<tr><td class="num">39.</td><td><div class="statement-box" contenteditable="true"><p><strong>Pri punoj svijesti izjavljujem:</strong> svi lični podaci na ovom obrascu proslijediće se nadležnim organima Crne Gore. Izjavljujem da su svi podaci istiniti i tačni. Svjestan sam da lažna izjava ima za posljedicu odbijanje zahtjeva ili poništenje vize. Obavezujem se da ću napustiti teritoriju Crne Gore po isteku roka važenja vize.</p><p><strong>I declare</strong> that all information provided is correct and complete. I am aware that any false statement will lead to rejection. I undertake to leave the territory of Montenegro upon expiry of the visa.</p><p><strong>Je déclare</strong> que toutes les indications fournies sont correctes et complètes. Toute fausse déclaration entraînera le rejet de ma demande.</p></div></td></tr>';
     html += '<tr><td class="num">40.</td><td><div class="lbl"><span contenteditable="true">Adresa podnosioca zahtjeva</span> <span class="lbl-sub">/ Applicant home address</span></div><div style="margin-top:3px;">' + v(r.adresa || '') + '</div></td></tr>';
@@ -558,18 +789,20 @@ function generisiVizaObrazac(o, r, datum, mjesto) {
     return html;
 }
 
-function showModal(id) { var m = document.getElementById(id); if (m) m.classList.add('active'); }
-function closeModal(id) { var m = document.getElementById(id); if (m) m.classList.remove('active'); }
-function toast(msg, error) {
-    var t = document.getElementById('toast'); if (!t) return;
-    t.textContent = msg; t.className = 'toast' + (error ? ' error' : '');
+// ==================== UTILS ====================
+function showModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+function toast(msg, error = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast' + (error ? ' error' : '');
     t.style.display = 'block';
-    setTimeout(function(){ t.style.display = 'none'; }, 3000);
+    setTimeout(() => t.style.display = 'none', 3000);
 }
-window.onclick = function(e) { if (e.target.classList && e.target.classList.contains('modal')) e.target.classList.remove('active'); };
+window.onclick = function(e) { if (e.target.classList.contains('modal')) e.target.classList.remove('active'); };
 
 loadLocal();
-console.log('✅ Spremno.');
+console.log('✅ Aplikacija učitana.');
 </script>
 </body>
 </html>
