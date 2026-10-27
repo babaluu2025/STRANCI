@@ -608,35 +608,37 @@ async function generisiVizaPDF(o, r, datum, mjesto) {
     const ugovorOd = r.ugovor_od || '';
     const ugovorDo = r.ugovor_do || '';
 
-    const cb = (checked, label) => `<span style="display:inline-block;width:10px;height:10px;border:1px solid #000;margin-right:4px;vertical-align:middle;${checked ? 'background:#000;' : ''}"></span>${label}`;
+    const cb = (checked, label) => `<span style="display:inline-block;width:9px;height:9px;border:1px solid #000;margin-right:3px;vertical-align:middle;${checked ? 'background:#000;' : ''}"></span>${label}`;
 
     const html = `<!DOCTYPE html>
     <html><head><meta charset="UTF-8"><title>Viza - ${ime} ${prezime}</title>
     <style>
-        @page { size: A4; margin: 0; }
-        body { font-family: Arial, sans-serif; font-size: 8pt; background: #fff; margin: 0; padding: 0; }
-        .page { width: 210mm; height: 297mm; padding: 10mm; box-sizing: border-box; page-break-after: always; position: relative; }
+        @page { size: A4; margin: 5mm; }
+        body { font-family: Arial, sans-serif; font-size: 7.5pt; background: #fff; margin: 0; padding: 0; }
+        .page { width: 200mm; height: 287mm; box-sizing: border-box; page-break-after: always; position: relative; margin: 0 auto; }
         .toolbar { position: fixed; top: 0; left: 0; right: 0; background: #222; color: #fff; padding: 8px 15px; text-align: center; z-index: 9999; font-family: 'Segoe UI', sans-serif; }
         .toolbar button { padding: 6px 12px; margin: 0 5px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
         .btn-print { background: #17a2b8; color: #fff; }
         .btn-close { background: #dc3545; color: #fff; }
-        table { width: 100%; border-collapse: collapse; border: 1px solid #000; }
-        td, th { border: 1px solid #000; padding: 2px 4px; vertical-align: top; }
-        .lbl { font-size: 6.5pt; font-weight: bold; }
-        .lbl-sub { font-size: 5.5pt; font-style: italic; color: #333; }
-        .num { font-size: 7pt; font-weight: bold; text-align: center; width: 15px; }
-        .val { font-size: 8pt; font-weight: bold; min-height: 15px; padding-top: 2px; outline: none; }
+        table { width: 100%; border-collapse: collapse; border: 1px solid #000; margin-bottom: 0; }
+        td, th { border: 1px solid #000; padding: 1px 3px; vertical-align: top; }
+        .lbl { font-size: 6pt; font-weight: bold; line-height: 1.1; }
+        .lbl-sub { font-size: 5pt; font-style: italic; color: #333; line-height: 1.1; }
+        .num { font-size: 6.5pt; font-weight: bold; text-align: center; width: 12px; }
+        .val { font-size: 7.5pt; font-weight: bold; min-height: 12px; padding-top: 1px; outline: none; }
         .val:focus { background: #e6f7ff; }
-        .header-grb { text-align: center; height: 80px; margin-bottom: 10px; }
+        .header-grb { text-align: center; height: 65px; margin-bottom: 2px; }
         .header-grb img { height: 100%; }
-        .header-title { text-align: center; font-size: 14pt; font-weight: bold; font-family: 'Times New Roman', serif; }
-        .header-sub { text-align: center; font-size: 10pt; font-style: italic; }
-        .photo-box { width: 35mm; height: 45mm; border: 1px solid #000; position: absolute; top: 15mm; left: 15mm; text-align: center; font-size: 8pt; padding-top: 15mm; box-sizing: border-box; }
-        .section-title { background: #f0f0f0; font-weight: bold; font-size: 7pt; text-align: center; }
+        .header-title { text-align: center; font-size: 12pt; font-weight: bold; font-family: 'Times New Roman', serif; }
+        .header-sub { text-align: center; font-size: 8pt; font-style: italic; }
+        .photo-box { width: 30mm; height: 40mm; border: 1px solid #000; position: absolute; top: 10mm; left: 10mm; text-align: center; font-size: 7pt; padding-top: 10mm; box-sizing: border-box; }
+        .section-title { background: #f0f0f0; font-weight: bold; font-size: 6.5pt; text-align: center; }
+        .napomene-line { border-bottom: 1px dotted #000; height: 12px; margin: 1px 0; }
         
         @media print {
             .toolbar { display: none; }
-            .page { padding: 5mm; }
+            body { margin: 0; }
+            .page { margin: 0; }
         }
     </style>
     </head><body>
@@ -644,27 +646,27 @@ async function generisiVizaPDF(o, r, datum, mjesto) {
     <div class="toolbar">
         <button class="btn-print" onclick="window.print()">🖨️ Štampaj / Sačuvaj PDF</button>
         <button class="btn-close" onclick="window.close()">✖ Zatvori</button>
-        <div style="font-size:12px; margin-top:5px;">Možeš kliknuti na bilo koje polje da ispraviš tekst prije štampe.</div>
+        <div style="font-size:11px; margin-top:5px;">Klikni na polje da ispraviš tekst prije štampe.</div>
     </div>
 
-    <div style="height: 40px;"></div>
+    <div style="height: 35px;"></div>
 
     <!-- STRANICA 1 -->
     <div class="page">
-        <div style="position: absolute; top: 10mm; right: 10mm; font-size: 8pt; font-weight: bold;">OBRAZAC 1</div>
+        <div style="position: absolute; top: 5mm; right: 5mm; font-size: 7pt; font-weight: bold;">OBRAZAC 1</div>
         
-        <table style="border: none; margin-bottom: 10px;">
+        <table style="border: none; margin-bottom: 5px;">
             <tr>
-                <td style="border: none; width: 35mm; height: 45mm; position: relative;">
+                <td style="border: none; width: 30mm; height: 40mm; position: relative;">
                     <div class="photo-box">fotografija<br>photo<br>35 x 45 mm</div>
                 </td>
                 <td style="border: none; text-align: center; vertical-align: middle;">
-                    <div class="header-grb"><img src="grb.png" alt="Grb Crne Gore"></div>
+                    <div class="header-grb"><img src="grb.png" alt="Grb"></div>
                     <div class="header-title">ZAHTJEV ZA VIZU</div>
                     <div class="header-sub">VISA APPLICATION</div>
                     <div class="header-sub">DEMANDE DU VISA</div>
                 </td>
-                <td style="border: none; width: 35mm; font-size: 7pt; text-align: right; vertical-align: top;">
+                <td style="border: none; width: 30mm; font-size: 6pt; text-align: right; vertical-align: top;">
                     prijemni štambil<br>stamp of receipt<br>cachet de reception
                 </td>
             </tr>
@@ -672,12 +674,12 @@ async function generisiVizaPDF(o, r, datum, mjesto) {
 
         <table>
             <tr>
-                <td style="width: 50%; text-align: center; font-weight: bold; font-size: 8pt;">IZDAVANJE / DELIVRANCE ${cb(false, '')}</td>
-                <td style="width: 50%; text-align: center; font-weight: bold; font-size: 8pt;">PRODUŽENJE / EXTENSION ${cb(false, '')}</td>
+                <td style="width: 50%; text-align: center; font-weight: bold; font-size: 7pt;">IZDAVANJE / DELIVRANCE ${cb(false, '')}</td>
+                <td style="width: 50%; text-align: center; font-weight: bold; font-size: 7pt;">PRODUŽENJE / EXTENSION ${cb(false, '')}</td>
             </tr>
         </table>
 
-        <table style="margin-top: 5px;">
+        <table style="margin-top: 2px;">
             <tr>
                 <td class="num">1.</td>
                 <td>
@@ -732,14 +734,14 @@ async function generisiVizaPDF(o, r, datum, mjesto) {
                 <td class="num">8.</td>
                 <td>
                     <div class="lbl">Pol / Sex</div>
-                    <div style="margin-top: 2px;">${cb(pol === 'M', 'Muški / Male')} &nbsp;&nbsp; ${cb(pol === 'Ž', 'Ženski / Female')}</div>
+                    <div style="margin-top: 1px;">${cb(pol === 'M', 'Muški / Male')} &nbsp;&nbsp; ${cb(pol === 'Ž', 'Ženski / Female')}</div>
                 </td>
             </tr>
             <tr>
                 <td class="num">9.</td>
                 <td>
                     <div class="lbl">Bračno stanje / Marital status</div>
-                    <div style="margin-top: 2px; display: flex; flex-wrap: wrap; gap: 10px;">
+                    <div style="margin-top: 1px; display: flex; flex-wrap: wrap; gap: 8px;">
                         ${cb(bracno === 'Single', 'Neoženjen/neudata')}
                         ${cb(bracno === 'Married', 'Oženjen/udata')}
                         ${cb(bracno === 'Divorced', 'Razveden(a)')}
@@ -751,8 +753,7 @@ async function generisiVizaPDF(o, r, datum, mjesto) {
                 <td class="num">10.</td>
                 <td>
                     <div class="lbl">Vrsta putne isprave / Type of passport</div>
-                    <div style="margin-top: 2px;">${cb(true, 'Običan pasoš / National passport')}</div>
-                    <div>${cb(false, 'Diplomatski / Diplomatic')} ${cb(false, 'Službeni / Service')}</div>
+                    <div style="margin-top: 1px;">${cb(true, 'Običan pasoš / National passport')} ${cb(false, 'Diplomatski / Diplomatic')} ${cb(false, 'Službeni / Service')}</div>
                 </td>
             </tr>
             <tr>
@@ -794,29 +795,29 @@ async function generisiVizaPDF(o, r, datum, mjesto) {
                 <td class="num">16.</td>
                 <td>
                     <div class="lbl">Ako boravite u zemlji koja nije vaša zemlja porijekla, imate li dozvolu za povratak?</div>
-                    <div style="margin-top: 2px;">${cb(false, 'NE / NO')} &nbsp;&nbsp; ${cb(false, 'DA / YES')}</div>
+                    <div style="margin-top: 1px;">${cb(false, 'NE / NO')} &nbsp;&nbsp; ${cb(false, 'DA / YES')}</div>
                 </td>
             </tr>
         </table>
 
-        <table style="margin-top: 5px;">
+        <table style="margin-top: 2px;">
             <tr>
                 <td colspan="2" class="section-title">Popunjava službeno lice / To be filled out by official person</td>
             </tr>
             <tr>
                 <td style="width: 50%;">
                     <div class="lbl">Datum obrade zahtjeva</div>
-                    <div class="val" contenteditable="true" style="height: 20px;"></div>
+                    <div class="val" contenteditable="true" style="height: 18px;"></div>
                 </td>
                 <td style="width: 50%;">
                     <div class="lbl">Potpis službenog lica</div>
-                    <div class="val" contenteditable="true" style="height: 20px;"></div>
+                    <div class="val" contenteditable="true" style="height: 18px;"></div>
                 </td>
             </tr>
             <tr>
                 <td colspan="2">
                     <div class="lbl">Priložena dokumentacija</div>
-                    <div style="margin-top: 2px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <div style="margin-top: 1px;">
                         ${cb(false, 'Važeći pasoš')} ${cb(false, 'Novčana sredstva')} ${cb(false, 'Poziv')} ${cb(false, 'Putno osiguranje')}
                     </div>
                 </td>
@@ -832,6 +833,25 @@ async function generisiVizaPDF(o, r, datum, mjesto) {
                 <td>
                     <div class="lbl">Zanimanje / Current occupation</div>
                     <div class="val" contenteditable="true">${zanimanje}</div>
+                </td>
+                <td class="right-side" rowspan="16" style="width: 40mm; vertical-align: top; padding: 2px;">
+                    <div class="lbl" style="text-align:center;">Vrsta vize<br>Type of visa</div>
+                    <div style="margin-top: 2px;">${cb(false, 'A')} ${cb(false, 'B')} ${cb(false, 'C')} ${cb(true, 'D')}</div>
+                    
+                    <div class="lbl" style="text-align:center; margin-top: 6px;">Broj ulazaka<br>Entries</div>
+                    <div>${cb(true, '1')} ${cb(false, '2')} ${cb(false, 'N')}</div>
+                    
+                    <div class="lbl" style="text-align:center; margin-top: 6px;">Rok važenja<br>Validity</div>
+                    <div class="lbl-sub">od / from:</div>
+                    <div class="napomene-line"></div>
+                    <div class="lbl-sub">do / to:</div>
+                    <div class="napomene-line"></div>
+
+                    <div class="lbl" style="text-align:center; margin-top: 6px;">Napomene<br>Remarks</div>
+                    <div class="napomene-line"></div>
+                    <div class="napomene-line"></div>
+                    <div class="napomene-line"></div>
+                    <div class="napomene-line"></div>
                 </td>
             </tr>
             <tr>
@@ -853,42 +873,45 @@ async function generisiVizaPDF(o, r, datum, mjesto) {
                 <td class="num">20.</td>
                 <td>
                     <div class="lbl">Druge vize izdate u posljednje tri godine</div>
+                    <div class="lbl-sub">Other visas (past three years)</div>
                     <div class="val" contenteditable="true"></div>
+                </td>
+            </tr>
+            <tr>
+                <td class="num">21.</td>
+                <td>
+                    <div class="lbl">U slučaju tranzita, imate li dozvolu ulaska u treću zemlju?</div>
+                    <div class="lbl-sub">In case of transit, have you entry permit for final destination?</div>
                 </td>
             </tr>
             <tr>
                 <td class="num">22.</td>
                 <td>
                     <div class="lbl">Vrsta vize / Type of visa</div>
-                    <div style="margin-top: 2px; display: flex; gap: 10px; flex-wrap: wrap;">
-                        ${cb(false, 'A')} ${cb(false, 'B')} ${cb(false, 'C')} ${cb(true, 'D (Viza na duži boravak)')}
-                    </div>
-                    <div style="margin-top: 2px;">
-                        ${cb(true, 'Individualna')} ${cb(false, 'Kolektivna')}
-                    </div>
+                    <div style="margin-top: 1px;">${cb(false, 'Aerodromsko-tranzitna (A)')} ${cb(false, 'Tranzitna (B)')}</div>
+                    <div>${cb(false, 'Putna (C)')} ${cb(true, 'Viza na duži boravak (D)')}</div>
+                    <div>${cb(true, 'Individualna')} ${cb(false, 'Kolektivna')}</div>
                 </td>
             </tr>
             <tr>
                 <td class="num">23.</td>
                 <td>
                     <div class="lbl">Broj ulazaka / Number of entries</div>
-                    <div style="margin-top: 2px;">
-                        ${cb(true, 'Jedan / One')} ${cb(false, 'Dva / Two')} ${cb(false, 'Više / Multiple')}
-                    </div>
+                    <div style="margin-top: 1px;">${cb(true, 'Jedan / One')} ${cb(false, 'Dva / Two')} ${cb(false, 'Više / Multiple')}</div>
                 </td>
             </tr>
             <tr>
                 <td class="num">24.</td>
                 <td>
                     <div class="lbl">Trajanje boravka / Duration of stay</div>
-                    <div class="val" contenteditable="true">360 dana</div>
+                    <div class="val" contenteditable="true">360 dana / days</div>
                 </td>
             </tr>
             <tr>
                 <td class="num">25.</td>
                 <td>
                     <div class="lbl">Svrha putovanja / Purpose of travel</div>
-                    <div style="margin-top: 2px;">
+                    <div style="margin-top: 1px;">
                         ${cb(false, 'Turizam')} ${cb(true, 'Zasnivanje radnog odnosa (Ostalo)')} 
                     </div>
                     <div class="val" contenteditable="true">Zasnivanje radnog odnosa</div>
@@ -912,7 +935,7 @@ async function generisiVizaPDF(o, r, datum, mjesto) {
                 <td class="num">28.</td>
                 <td>
                     <div class="lbl">Ko snosi troškove putovanja i boravka?</div>
-                    <div style="margin-top: 2px;">
+                    <div style="margin-top: 1px;">
                         ${cb(false, 'Lično')} ${cb(false, 'Fizičko lice')} ${cb(true, 'Pravno lice')}
                     </div>
                     <div class="val" contenteditable="true">${o.naziv || ''}</div>
@@ -922,7 +945,7 @@ async function generisiVizaPDF(o, r, datum, mjesto) {
                 <td class="num">29.</td>
                 <td>
                     <div class="lbl">Novčana sredstva za izdržavanje</div>
-                    <div style="margin-top: 2px;">
+                    <div style="margin-top: 1px;">
                         ${cb(false, 'Gotovina')} ${cb(true, 'Smještaj')} ${cb(true, 'Putno i/ili zdravstveno osiguranje')}
                     </div>
                     <div class="val" contenteditable="true"></div>
@@ -994,13 +1017,13 @@ async function generisiVizaPDF(o, r, datum, mjesto) {
                 <td class="num">38.</td>
                 <td>
                     <div class="lbl">Djeca / Children</div>
-                    <div class="val" contenteditable="true" style="height: 40px;"></div>
+                    <div class="val" contenteditable="true" style="height: 30px;"></div>
                 </td>
             </tr>
             <tr>
                 <td class="num">39.</td>
                 <td>
-                    <div class="lbl" style="font-size: 6pt; font-weight: normal; line-height: 1.2;">
+                    <div class="lbl" style="font-size: 5.5pt; font-weight: normal; line-height: 1.15;">
                         Pri punoj svijesti izjavljujem i pristajem na sljedeće: svi moji lični podaci koji se navode na ovom obrascu zahtjeva za vizu proslijediće se, ako je potrebno, na rješavanje i provjeru nadležnim organima Crne Gore, u cilju odlučivanja o ovom zahtjevu. Izjavljujem da su svi podaci koje sam naveo/la u ovom obrascu istiniti i tačni. Svjestan sam da će bilo koja lažna izjava imati za posljedicu odbijanje mog zahtjeva ili poništenje već izdate viz. Obavezujem se da ću napustiti državnu teritoriju Crne Gore po isteku roka važenja viz, ako mi viza bude izdata.
                         <br><br>
                         I am aware of and consent to the following: any personal data concerning me which appear on this visa application form will be supplied to the relevant authorities of Montenegro and processed by those authorities. I declare that to the best of my knowledge all particulars supplied by me are correct and complete. I am aware that any false statements will lead to my application being rejected or to the annulment of a visa already granted.
@@ -1032,7 +1055,7 @@ async function generisiVizaPDF(o, r, datum, mjesto) {
                 <td class="num">43.</td>
                 <td>
                     <div class="lbl">Potpis podnosioca zahtjeva</div>
-                    <div class="val" contenteditable="true" style="height: 40px;"></div>
+                    <div class="val" contenteditable="true" style="height: 35px;"></div>
                 </td>
             </tr>
         </table>
