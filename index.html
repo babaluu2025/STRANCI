@@ -110,7 +110,7 @@
     <div class="modal-content">
         <div class="modal-header"><h2>📥 Uvoz radnika iz Excela</h2><button onclick="closeModal('uvozModal')" style="font-size:28px;background:none;border:none;cursor:pointer;">&times;</button></div>
         <div class="info-box info-info">💡 Označi redove u Excelu (Ctrl+C), pa zalijepi ovdje (Ctrl+V).</div>
-        <div class="form-group"><textarea id="uvozTekst" style="min-height:200px;" placeholder="Primjer:&#10;Name&#9;khaled Ahmed Mmansour Ahmed&#9;&#9;&#9;COOK&#10;Surname&#9;Ahmed"></textarea></div>
+        <div class="form-group"><textarea id="uvozTekst" style="min-height:200px;" placeholder="Zalijepi ovdje..."></textarea></div>
         <button onclick="parsirajUvoz()" class="btn btn-primary" style="width:100%;padding:12px;">🔍 Prepoznaj radnike</button>
         <div id="uvozPreview" style="margin-top:15px;"></div>
     </div>
@@ -382,7 +382,7 @@ async function obrisiObjekt(id) {
     await saveToCloud(); renderMain(); toast('🗑 Obrisano');
 }
 
-// ==================== UVOZ ====================
+// ==================== UVOZ (TAČAN ZA TVOJ EXCEL FORMAT) ====================
 function showUvoz() {
     document.getElementById('uvozTekst').value = '';
     document.getElementById('uvozPreview').innerHTML = '';
@@ -396,33 +396,64 @@ function parsirajUvoz() {
     const linije = tekst.split(/\r?\n/);
     const radnici = [];
     let trenutni = null;
+
     linije.forEach(linija => {
         if (!linija.trim()) return;
-        let dijelovi = linija.includes('\t') ? linija.split('\t').map(x => x.trim()) : [linija.trim()];
-        const kljuc = (dijelovi[0] || '').toLowerCase().trim();
-        const vrijednost = (dijelovi[1] || '').trim();
+        // Dijelimo po tabu (Excel format)
+        let dijelovi = linija.split('\t').map(x => x.trim());
+        let kljuc = (dijelovi[0] || '').toLowerCase().replace(/:/g, '').trim(); // Uklanjamo dvotačke
+        let vrijednost = (dijelovi[1] || '').trim();
+
         if (!kljuc) return;
-        if (kljuc === 'name' || kljuc === 'ime') {
-            if (trenutni && (trenutni.ime || trenutni.pasos)) radnici.push(trenutni);
-            trenutni = { ime: vrijednost };
-            if (dijelovi[4]) trenutni.zanimanje = dijelovi[4].trim();
+
+        // Ako je "Surname", to znači da počinje novi radnik
+        if (kljuc === 'surname') {
+            if (trenutni && (trenutni.ime || trenutni.prezime)) radnici.push(trenutni);
+            trenutni = { prezime: vrijednost };
             return;
         }
+
         if (!trenutni) trenutni = {};
-        if (kljuc === 'surname' || kljuc === 'prezime') trenutni.prezime = vrijednost;
-        else if (kljuc.includes('place of birth') || kljuc === 'mjesto_rođenja') trenutni.mjesto_rodenja = vrijednost;
-        else if (kljuc === 'addrress' || kljuc === 'address' || kljuc === 'adresa') trenutni.adresa = vrijednost;
-        else if (kljuc.includes('place of passport')) trenutni.mjesto_izdavanja = vrijednost;
-        else if (kljuc === 'passport number' || kljuc === 'broj pasoša') trenutni.pasos = vrijednost;
-        else if (kljuc.includes('contact person')) trenutni.kontakt_osoba = vrijednost;
-        else if (kljuc.includes('workplace') || kljuc.includes('nominated')) trenutni.radno_mjesto = vrijednost;
+
+        // Mapiranje polja na osnovu tvog Excel formata
+        if (kljuc === 'name' || kljuc === 'ime') trenutni.ime = vrijednost;
+        else if (kljuc.includes('name of father')) trenutni.roditelji = vrijednost;
+        else if (kljuc.includes('name: mother') || (kljuc.includes('name') && kljuc.includes('mother'))) {
+            trenutni.roditelji = (trenutni.roditelji ? trenutni.roditelji + ' / ' : '') + vrijednost;
+        }
+        else if (kljuc.includes('date of birth') && !kljuc.includes('spouse') && !kljuc.includes('children')) trenutni.datum_rodenja = vrijednost;
+        else if (kljuc.includes('place and country of birth')) trenutni.mjesto_rodenja = vrijednost;
+        else if (kljuc.includes('current nationality')) trenutni.drzavljanstvo = vrijednost;
+        else if (kljuc.includes('no of passport') || kljuc.includes('broj pasoša')) trenutni.pasos = vrijednost;
+        else if (kljuc.includes('passport issuing') || kljuc.includes('place of passport')) trenutni.mjesto_izdavanja = vrijednost;
+        else if (kljuc.includes('date of issue')) trenutni.datum_izdavanja = vrijednost;
+        else if (kljuc.includes('passport expiry')) trenutni.datum_vazenja = vrijednost;
+        else if (kljuc.includes('your adress') || kljuc.includes('address')) trenutni.adresa = vrijednost;
+        else if (kljuc.includes('phone number')) trenutni.kontakt_osoba = vrijednost;
+        else if (kljuc.includes('working outside')) trenutni.zanimanje = vrijednost; // Pretpostavka
     });
-    if (trenutni && (trenutni.ime || trenutni.pasos)) radnici.push(trenutni);
-    radnici.forEach(r => { if (!r.drzavljanstvo) r.drzavljanstvo = 'Egypt'; });
+
+    // Dodajemo posljednjeg radnika
+    if (trenutni && (trenutni.ime || trenutni.prezime)) radnici.push(trenutni);
+
+    // Postavljamo podrazumijevane vrijednosti ako fale
+    radnici.forEach(r => {
+        if (!r.drzavljanstvo) r.drzavljanstvo = 'EGYPTIAN';
+        if (!r.ime) r.ime = 'Nepoznato';
+        if (!r.prezime) r.prezime = 'Nepoznato';
+    });
+
     trenutniUvoz = radnici;
-    if (radnici.length === 0) { document.getElementById('uvozPreview').innerHTML = '<div class="info-box info-danger">❌ Nisam prepoznao nijednog radnika.</div>'; return; }
-    let html = `<div class="info-box info-success">✅ Prepoznato <strong>${radnici.length}</strong> radnika:</div><table><thead><tr><th>Ime</th><th>Pasoš</th><th>Zanimanje</th></tr></thead><tbody>`;
-    radnici.forEach(r => { html += `<tr><td><strong>${r.ime || ''} ${r.prezime || ''}</strong></td><td>${r.pasos || '-'}</td><td>${r.zanimanje || '-'}</td></tr>`; });
+
+    if (radnici.length === 0) {
+        document.getElementById('uvozPreview').innerHTML = '<div class="info-box info-danger">❌ Nisam prepoznao nijednog radnika. Provjeri da li si dobro zalijepio tekst.</div>';
+        return;
+    }
+
+    let html = `<div class="info-box info-success">✅ Prepoznato <strong>${radnici.length}</strong> radnika:</div><table><thead><tr><th>Ime</th><th>Prezime</th><th>Pasoš</th></tr></thead><tbody>`;
+    radnici.forEach(r => {
+        html += `<tr><td>${r.ime || '-'}</td><td>${r.prezime || '-'}</td><td>${r.pasos || '-'}</td></tr>`;
+    });
     html += `</tbody></table><button onclick="potvrdiUvoz()" class="btn btn-success" style="width: 100%; padding: 12px; margin-top: 15px;">✅ Dodaj ${radnici.length} radnika</button>`;
     document.getElementById('uvozPreview').innerHTML = html;
 }
@@ -432,7 +463,11 @@ async function potvrdiUvoz() {
     if (!o) return;
     if (!o.radnici) o.radnici = [];
     let dodano = 0;
-    trenutniUvoz.forEach(r => { if (!o.radnici.find(x => x.pasos === r.pasos && r.pasos)) { o.radnici.push(r); dodano++; } });
+    trenutniUvoz.forEach(r => {
+        // Provjera duplikata po pasošu
+        const postoji = o.radnici.find(x => x.pasos === r.pasos && r.pasos);
+        if (!postoji) { o.radnici.push(r); dodano++; }
+    });
     await saveToCloud(); closeModal('uvozModal'); renderMain(); toast(`✅ Dodano ${dodano} radnika`);
 }
 
@@ -627,18 +662,18 @@ async function generisiVizaPDF(o, r, datum, mjesto) {
         const prezime = r.prezime || '';
         const pasos = r.pasos || '';
 
-        // STRANICA 1
+        // STRANICA 1 (Ovo su okvirne koordinate, podesićemo ih zajedno)
         if (pages[0]) {
             const p1 = pages[0];
             
-            // Prezime (Polje 1)
-            dodajTekst(p1, prezime, 150, 580, 10); 
+            // Prezime (Polje 1) - X je od lijeve ivice, Y je od DONJE ivice
+            dodajTekst(p1, prezime, 100, 600, 10); 
             
             // Ime (Polje 2)
-            dodajTekst(p1, ime, 150, 540, 10); 
+            dodajTekst(p1, ime, 100, 570, 10); 
             
             // Broj pasoša (Polje 11)
-            dodajTekst(p1, pasos, 150, 330, 10); 
+            dodajTekst(p1, pasos, 100, 350, 10); 
         }
 
         // STRANICA 2
@@ -646,7 +681,7 @@ async function generisiVizaPDF(o, r, datum, mjesto) {
             const p2 = pages[1];
             
             // Zanimanje (Polje 17)
-            dodajTekst(p2, r.zanimanje, 150, 750, 10);
+            dodajTekst(p2, r.zanimanje, 100, 750, 10);
         }
 
         const pdfBytes = await pdfDoc.save();
